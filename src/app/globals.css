@@ -1,0 +1,142 @@
+@import "tailwindcss";
+
+/* ---------- Identidad de Velare ----------
+   Un solo lugar para colores, tipografías y movimiento. Las utilidades de
+   Tailwind salen de aquí: bg-paper, text-ink, border-line, font-display... */
+
+@theme {
+  /* Se quita la paleta por defecto de Tailwind: solo existen estos colores. */
+  --color-*: initial;
+
+  /* Neutros fríos con un toque de verde (porcelana, no crema). */
+  --color-paper: oklch(0.982 0.004 160); /* fondo de página */
+  --color-surface: oklch(0.997 0.002 160); /* tablas, campos, superficies elevadas */
+  --color-mist: oklch(0.955 0.007 160); /* rellenos suaves, esqueletos de carga */
+  --color-line: oklch(0.895 0.01 160); /* bordes y divisores */
+
+  /* Texto. ink-faint no debe usarse sobre mist (no alcanza el contraste AA). */
+  --color-ink: oklch(0.21 0.025 160);
+  --color-ink-soft: oklch(0.44 0.02 160);
+  --color-ink-faint: oklch(0.54 0.015 160);
+
+  /* El único color de marca: verde menta pastel. Botones, cabecera del panel, portada.
+     Es claro, así que el texto que va encima es verde muy oscuro (on-brand). */
+  --color-brand: oklch(0.8 0.075 160);
+  --color-brand-strong: oklch(0.74 0.085 160); /* al pasar el cursor */
+  --color-on-brand: oklch(0.23 0.05 160);
+  --color-on-brand-soft: oklch(0.37 0.05 160);
+
+  /* Estados. Cada uno tiene su texto y su fondo suave. */
+  --color-ok: oklch(0.4 0.1 155);
+  --color-ok-soft: oklch(0.95 0.04 155);
+  --color-warn: oklch(0.45 0.1 70);
+  --color-warn-soft: oklch(0.955 0.05 85);
+  --color-danger: oklch(0.46 0.16 25);
+  --color-danger-soft: oklch(0.955 0.03 25);
+
+  /* Gráficas. Tres colores comprobados para que también los distinga una persona
+     daltónica. Solo se usan en marcas de gráficas, nunca en texto ni botones. */
+  --color-chart-cost: #3f6fb0; /* costo de lo vendido */
+  --color-chart-inventory: #b8741a; /* mercancía aún en inventario */
+  --color-chart-profit: #1b9e6b; /* ganancia */
+
+  --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Aparición de texto importante: sube 12px y se enfoca. */
+  --animate-unveil: unveil var(--duration-very-slow) ease-in-out both;
+  /* Contenido que reemplaza a un esqueleto de carga. */
+  --animate-settle: settle var(--duration-slow) ease-in-out both;
+  --animate-skeleton: skeleton 1.2s linear infinite alternate;
+  /* Un valor calculado que cambia mientras el usuario escribe. */
+  --animate-swap: swap var(--duration-quick) ease-in-out both;
+
+  /* Las barras de una gráfica crecen desde la izquierda al aparecer. */
+  --animate-grow: grow var(--duration-very-slow) var(--ease-smooth-out) both;
+
+  @keyframes grow {
+    from {
+      transform: scaleX(0);
+    }
+  }
+  @keyframes swap {
+    from {
+      opacity: 0;
+      transform: translateY(var(--distance-micro));
+      filter: blur(var(--blur-small));
+    }
+  }
+  @keyframes unveil {
+    from {
+      opacity: 0;
+      transform: translateY(var(--distance-medium));
+      filter: blur(var(--blur-medium));
+    }
+  }
+  @keyframes settle {
+    from {
+      opacity: 0;
+      filter: blur(var(--blur-small));
+    }
+  }
+  @keyframes skeleton {
+    to {
+      opacity: 0.45;
+    }
+  }
+}
+
+@theme inline {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-jost), var(--font-geist-sans), sans-serif;
+}
+
+/* ---------- Movimiento ----------
+   Escala de transitions.dev. Cada valor se elige por su USO (lo que hace la
+   animación), no por el número más cercano. Con Tailwind se usan así:
+   duration-(--duration-quick) ease-smooth-out */
+:root {
+  /* Duraciones */
+  --duration-stagger: 40ms; /* desfase entre elementos de una lista */
+  --duration-micro: 80ms; /* desfase entre pocos elementos grandes */
+  --duration-quick: 150ms; /* hover, cerrar un menú o modal, cambio de texto */
+  --duration-fast: 250ms; /* abrir un menú o modal, pestañas, cambio de icono */
+  --duration-medium: 350ms; /* cerrar un panel o un aviso */
+  --duration-slow: 400ms; /* abrir un panel, contenido tras la carga */
+  --duration-very-slow: 500ms; /* momentos de énfasis, aparición de texto */
+  /* Distancias */
+  --distance-micro: 4px;
+  --distance-base: 8px;
+  --distance-medium: 12px;
+  /* Escalas (desde dónde empieza una superficie al abrirse) */
+  --scale-large: 0.96; /* modal */
+  --scale-medium: 0.97; /* menú desplegable */
+  --scale-small: 0.98; /* botón presionado, tooltip */
+  /* Desenfoque inicial */
+  --blur-small: 2px;
+  --blur-medium: 3px;
+}
+
+/* ---------- Lo que el navegador dibuja por su cuenta ---------- */
+@layer base {
+  html {
+    caret-color: var(--color-on-brand);
+    scrollbar-color: var(--color-line) transparent;
+  }
+  ::selection {
+    background: var(--color-brand);
+    color: var(--color-on-brand);
+  }
+  /* El foco usa el verde oscuro: el pastel no se vería sobre fondo claro. */
+  :focus-visible {
+    outline: 2px solid var(--color-on-brand);
+    outline-offset: 2px;
+  }
+  a {
+    text-underline-offset: 0.3em;
+  }
+  /* Dentro de una zona verde la selección se invierte para seguir viéndose. */
+  .bg-brand ::selection {
+    background: var(--color-on-brand);
+    color: var(--color-brand);
+  }
+}

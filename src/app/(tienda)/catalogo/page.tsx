@@ -1,0 +1,66 @@
+import type { Metadata } from "next";
+import { FilterBar } from "@/components/filter-bar";
+import { ProductCard } from "@/components/store/product-tile";
+import { listBrands, listProducts, sortOptions } from "@/lib/catalog";
+import { queryText } from "@/lib/form";
+
+export const metadata: Metadata = {
+  title: "Catálogo",
+  description: "Todos los perfumes de Velare: busca por nombre o marca y filtra por público.",
+};
+
+const audiences = ["Hombre", "Mujer", "Unisex"];
+
+export default async function CatalogPage({ searchParams }: PageProps<"/catalogo">) {
+  // Búsqueda, filtros y orden llegan en la dirección: ?q=hawas&marca=Rasasi&orden=precio-asc
+  const params = await searchParams;
+  const q = queryText(params.q);
+  const marca = queryText(params.marca);
+  const publico = queryText(params.publico);
+  const orden = queryText(params.orden);
+
+  const [products, brands] = await Promise.all([listProducts({ q, marca, publico, orden }), listBrands()]);
+  const filtering = Boolean(q || marca || publico);
+
+  return (
+    <main className="mx-auto w-full max-w-7xl flex-1 px-4 pt-12 pb-24 sm:px-8">
+      <div className="mb-8 flex flex-wrap items-baseline justify-between gap-4 motion-safe:animate-unveil">
+        <h1 className="font-display text-5xl font-light tracking-tight sm:text-6xl">Catálogo</h1>
+        <p className="text-sm text-ink-soft tabular-nums">
+          {products.length} {products.length === 1 ? "perfume" : "perfumes"}
+        </p>
+      </div>
+
+      <FilterBar
+        placeholder="Buscar por nombre o marca"
+        values={{ q, marca, publico, orden }}
+        filters={[
+          { name: "marca", label: "Todas las marcas", options: brands.map((brand) => ({ value: brand, label: brand })) },
+          { name: "publico", label: "Para todos", options: audiences.map((audience) => ({ value: audience, label: audience })) },
+          { name: "orden", label: "Más vendidos primero", options: sortOptions },
+        ]}
+      />
+
+      {products.length === 0 ? (
+        <div className="border border-line bg-surface px-6 py-16">
+          <h2 className="font-display text-2xl">{filtering ? "Ningún perfume coincide" : "Pronto habrá perfumes aquí"}</h2>
+          <p className="mt-2 text-sm leading-relaxed text-ink-soft">
+            {filtering
+              ? "Prueba con otra palabra o quita algún filtro con el botón Limpiar."
+              : "Estamos preparando el catálogo. Vuelve en unos días."}
+          </p>
+        </div>
+      ) : (
+        // key: al cambiar los filtros la rejilla vuelve a entrar.
+        <div
+          key={`${q}|${marca}|${publico}|${orden}`}
+          className="group/grid grid grid-cols-2 gap-x-5 gap-y-10 motion-safe:animate-settle md:grid-cols-3 xl:grid-cols-4"
+        >
+          {products.map((product) => (
+            <ProductCard key={product.id} product={product} labelClassName="text-[11px] sm:text-sm" />
+          ))}
+        </div>
+      )}
+    </main>
+  );
+}

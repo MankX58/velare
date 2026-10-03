@@ -18,6 +18,10 @@ export const getCurrentUser = cache(async (): Promise<User | null> => {
   if (!session) return null;
 
   const { sub, email, name } = session.user;
+  const existing = await sql`select id, email, name, role from users where auth0_sub = ${sub}`;
+  if (existing[0]) return existing[0] as User;
+
+  // Primera visita con sesión: se crea la fila.
   const rows = await sql`
     insert into users (auth0_sub, email, name)
     values (${sub}, ${email ?? null}, ${name ?? null})
@@ -25,6 +29,14 @@ export const getCurrentUser = cache(async (): Promise<User | null> => {
     returning id, email, name, role`;
   return rows[0] as User;
 });
+
+// Para páginas y acciones que necesitan una persona con sesión (hacer un pedido, ver sus pedidos).
+// `returnTo` es a dónde vuelve después de iniciar sesión.
+export async function requireUser(returnTo: string): Promise<User> {
+  const user = await getCurrentUser();
+  if (!user) redirect(`/auth/login?returnTo=${encodeURIComponent(returnTo)}`);
+  return user;
+}
 
 // Toda página o acción del panel empieza llamando a esto. El rol se lee de la
 // base de datos en el servidor: ocultar un botón en el navegador no protege nada.

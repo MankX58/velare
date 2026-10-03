@@ -54,6 +54,10 @@ Escala de transitions.dev, definida en `globals.css`. Cada valor se elige por lo
 | Texto importante que aparece | `motion-safe:animate-unveil`, escalonado con `--duration-micro` |
 | Contenido que reemplaza a un esqueleto | `motion-safe:animate-settle` |
 | Esqueleto de carga | `motion-safe:animate-skeleton` |
+| Bloque que entra al hacer scroll | clase `reveal` (solo CSS; sin soporte o con menos movimiento, queda visible) |
+| Cajas de la portada | `motion-safe:animate-deal`, cada una con su giro `--tilt` |
+| Cinta de marcas | `motion-safe:animate-marquee`; una sola por página y se detiene al señalarla |
+| Contador del carrito | `motion-safe:animate-pop` |
 | Abrir menú o modal / cerrarlo | `--duration-fast` / `--duration-quick` (cerrar siempre es más rápido) |
 
 - Toda animación lleva `motion-safe:` para respetar a quien pide menos movimiento.
@@ -63,8 +67,11 @@ Escala de transitions.dev, definida en `globals.css`. Cada valor se elige por lo
 ## Componentes
 
 - **Botones y enlaces:** `buttonStyles` y `linkStyles` de [button.ts](src/components/button.ts). Variante `onBrand` dentro de zonas verdes.
-- **Etiqueta de producto:** nombre arriba; debajo, la marca en Jost con mayúsculas espaciadas y los datos (SKU, público, tamaño). Es el motivo que se repite en panel y tienda.
-- **Avisos:** `sileo.success(...)`, `sileo.error(...)` desde componentes de cliente. El `Toaster` ya está en el layout raíz. Los errores de formulario van junto al campo, no en un aviso.
+- **Etiqueta de producto:** en el panel, nombre arriba y debajo la marca en Jost con mayúsculas espaciadas. En la tienda es `ProductLabel` de [product-tile.tsx](src/components/store/product-tile.tsx): una caja 4:5 como el frente de la caja del perfume, que hace de imagen mientras no haya foto. Cada marca tiene siempre el mismo tono (menta, niebla, verde oscuro o porcelana).
+- **Rejillas de producto:** `ProductCard` dentro de un contenedor `group/grid`; al señalar una tarjeta sube un poco y las demás se atenúan.
+- **Carrito:** `useCart` de [cart.ts](src/lib/cart.ts). Vive en el navegador y solo guarda ids y cantidades; los precios siempre vienen del servidor.
+- **Avisos:** `sileo.success(...)`, `sileo.error(...)` desde componentes de cliente. El `Toaster` está en el layout raíz: salen arriba al centro, duran 4 segundos, con fondo verde oscuro y los colores suaves definidos en `globals.css`. Los errores de formulario van junto al campo, no en un aviso.
+- **Iconos:** `@phosphor-icons/react`, siempre en peso `light`. Un icono sin texto lleva `aria-label` en su enlace o botón. El contador del carrito es un cuadro menta con número oscuro.
 - **Formularios:** `Field` + `inputStyles` de [field.tsx](src/components/field.tsx): etiqueta arriba, ayuda o error debajo. Se conectan al servidor con `useServerForm`, que conserva lo escrito si hay errores.
 - **Encabezado de página:** `PageHeader` con el enlace para volver, el título, la acción principal y una línea de datos (`Fact`).
 - **Buscar y filtrar:** `FilterBar` de [filter-bar.tsx](src/components/filter-bar.tsx). Guarda lo elegido en la dirección (`?q=...`) y la página filtra en la base de datos.

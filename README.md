@@ -52,7 +52,7 @@ La carpeta `data/` no se sube al repositorio: copia ahí el Excel antes de impor
 - `scripts/`: migraciones, importación del Excel y asignación del rol de administrador.
 - `src/lib/`: conexión a la base de datos (`db.ts`), Auth0 (`auth0.ts`), usuario actual y permisos (`auth.ts`), validación de formularios (`form.ts`) y cuentas de inventario (`inventory.ts`).
 - `src/proxy.ts`: deja que Auth0 atienda las rutas `/auth/*`.
-- `src/app/`: las páginas. El panel está en `src/app/admin`, con una carpeta por sección (`productos`, `compras`). En cada una, `actions.ts` tiene lo que se ejecuta en el servidor al guardar o eliminar.
+- `src/app/`: las páginas. La tienda pública está en `src/app/(tienda)` (inicio, `catalogo`, `producto/[slug]`, `carrito`). El panel está en `src/app/admin`, con una carpeta por sección (`productos`, `compras`, `ventas`). En cada una, `actions.ts` tiene lo que se ejecuta en el servidor al guardar o eliminar.
 - `src/components/`: piezas de interfaz compartidas (botones, campos, tablas, cabecera del panel).
 - `DESIGN.md`: las reglas visuales. `PRODUCT.md`: los datos del negocio.
 

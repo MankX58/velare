@@ -18,8 +18,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col bg-paper font-sans text-ink">
         {children}
         {/* Avisos (toasts) de toda la app. Se lanzan con sileo.success(...), sileo.error(...).
-            fill es el color --color-ink; la librería lo necesita como valor fijo. */}
-        <Toaster position="top-right" theme="light" options={{ fill: "#0e1c14", roundness: 6 }} />
+            Salen arriba al centro y duran 4 segundos. fill es el verde oscuro de la marca
+            (--color-on-brand); la librería lo necesita como valor fijo. Los colores de
+            cada tipo de aviso se ajustan en globals.css. */}
+        <Toaster position="top-center" theme="light" options={{ fill: "#012415", roundness: 6, duration: 4000 }} />
       </body>
     </html>
   );

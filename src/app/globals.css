@@ -41,6 +41,7 @@
   --color-chart-profit: #1b9e6b; /* ganancia */
 
   --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.36, 0.64, 1); /* solo para entradas pequeñas, como un contador */
 
   /* Aparición de texto importante: sube 12px y se enfoca. */
   --animate-unveil: unveil var(--duration-very-slow) ease-in-out both;
@@ -50,6 +51,31 @@
   /* Un valor calculado que cambia mientras el usuario escribe. */
   --animate-swap: swap var(--duration-quick) ease-in-out both;
 
+  /* Cinta de marcas que se desliza sin fin. La lista va duplicada: al llegar a la mitad vuelve a empezar. */
+  --animate-marquee: marquee 40s linear infinite;
+  /* Un número pequeño que aparece con un rebote corto (contador del carrito). */
+  --animate-pop: pop var(--duration-very-slow) var(--ease-bounce) both;
+  /* Las cajas de la portada llegan desde abajo, cada una con su giro final (--tilt). */
+  --animate-deal: deal 900ms var(--ease-smooth-out) backwards;
+
+  @keyframes marquee {
+    to {
+      transform: translateX(-50%);
+    }
+  }
+  @keyframes pop {
+    from {
+      opacity: 0;
+      transform: scale(0.6);
+    }
+  }
+  @keyframes deal {
+    from {
+      opacity: 0;
+      translate: 0 18%;
+      rotate: 0deg;
+    }
+  }
   /* Las barras de una gráfica crecen desde la izquierda al aparecer. */
   --animate-grow: grow var(--duration-very-slow) var(--ease-smooth-out) both;
 
@@ -116,6 +142,18 @@
   --blur-medium: 3px;
 }
 
+/* ---------- Avisos de Sileo ----------
+   Sileo trae colores muy vivos. Aquí se cambian por tonos suaves de la misma
+   familia que la marca, para que el aviso no desentone con la página. */
+body {
+  --sileo-state-success: oklch(0.8 0.075 160); /* el menta de la marca */
+  --sileo-state-error: oklch(0.8 0.09 25);
+  --sileo-state-warning: oklch(0.86 0.08 85);
+  --sileo-state-info: oklch(0.85 0.04 200);
+  --sileo-state-action: oklch(0.85 0.04 200);
+  --sileo-state-loading: oklch(0.78 0.015 160);
+}
+
 /* ---------- Lo que el navegador dibuja por su cuenta ---------- */
 @layer base {
   html {
@@ -138,5 +176,19 @@
   .bg-brand ::selection {
     background: var(--color-on-brand);
     color: var(--color-brand);
+  }
+}
+
+/* ---------- Aparecer al hacer scroll ----------
+   Con la clase "reveal" un bloque entra (sube y se enfoca) a medida que asoma en
+   pantalla. Es solo CSS: en navegadores que no lo soportan, o si la persona pidió
+   menos movimiento, el bloque simplemente está visible. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal {
+      animation: unveil linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 45%;
+    }
   }
 }

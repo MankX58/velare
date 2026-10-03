@@ -13,12 +13,16 @@ export function ConfirmButton({
   question,
   successMessage,
   redirectTo,
+  confirmLabel = "Sí, eliminar",
+  failureTitle = "No se pudo eliminar",
 }: {
   action: () => Promise<FormState>;
   label: string;
   question: string;
   successMessage: string;
   redirectTo?: string;
+  confirmLabel?: string;
+  failureTitle?: string;
 }) {
   const [asking, setAsking] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -31,7 +35,7 @@ export function ConfirmButton({
         sileo.success({ title: successMessage });
         if (redirectTo) router.push(redirectTo);
       } else {
-        sileo.error({ title: "No se pudo eliminar", description: result.message });
+        sileo.error({ title: failureTitle, description: result.message });
         setAsking(false);
       }
     });
@@ -49,7 +53,7 @@ export function ConfirmButton({
     <span className="inline-flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-sm">
       <span className="text-ink-soft">{question}</span>
       <button type="button" onClick={confirm} disabled={pending} className={linkStyles.danger}>
-        {pending ? "Eliminando…" : "Sí, eliminar"}
+        {pending ? "Un momento…" : confirmLabel}
       </button>
       <button type="button" onClick={() => setAsking(false)} disabled={pending} className={linkStyles.default}>
         No

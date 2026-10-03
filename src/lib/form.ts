@@ -22,6 +22,17 @@ export function parseMoney(raw: string): number | null {
   return value <= MAX_MONEY ? value : null;
 }
 
+// "30", "30 %" o "2,5" → 0.3, 0.3, 0.025. Devuelve null si no es un porcentaje entre 0 y menos de 100.
+export function parsePercent(raw: string): number | null {
+  const text = raw.replace(/[%\s]/g, "").replace(",", ".");
+  if (!/^\d+(\.\d+)?$/.test(text)) return null;
+  const value = Number(text);
+  return value < 100 ? value / 100 : null;
+}
+
+// 0.3 → "30", 0.025 → "2.5". Para mostrar en un campo el porcentaje guardado.
+export const percentText = (fraction: number) => String(Number((fraction * 100).toFixed(2)));
+
 // Lector de un FormData. Cada método devuelve el valor limpio (o null si el campo
 // viene vacío y no es obligatorio) y anota en `errors` lo que esté mal.
 export function readForm(form: FormData) {
@@ -61,6 +72,23 @@ export function readForm(form: FormData) {
       const amount = parseMoney(value);
       if (amount === null) errors[name] = "Escribe un valor en pesos, sin decimales. Ejemplo: 215.000";
       return amount;
+    },
+
+    // Porcentaje: se escribe "30" y se guarda como fracción (0.3).
+    percent(name: string, { required = false } = {}) {
+      const value = raw(name);
+      if (!value) return empty(name, required);
+      const fraction = parsePercent(value);
+      if (fraction === null) errors[name] = "Escribe un porcentaje entre 0 y 99. Ejemplo: 30";
+      return fraction;
+    },
+
+    // Teléfono o WhatsApp: dígitos, espacios y guiones, con "+" opcional al inicio.
+    phone(name: string, { required = false } = {}) {
+      const value = raw(name);
+      if (!value) return empty(name, required);
+      if (value.length > 20 || !/^[+\d][\d\s-]{6,}$/.test(value)) errors[name] = "Escribe un número de teléfono válido.";
+      return value;
     },
 
     oneOf(name: string, options: string[], { required = false } = {}) {

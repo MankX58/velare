@@ -2,6 +2,7 @@ import Link from "next/link";
 import { buttonStyles } from "@/components/button";
 import { ConfirmButton } from "@/components/confirm-button";
 import { FilterBar } from "@/components/filter-bar";
+import { Glossary } from "@/components/glossary";
 import { Fact, NoMatches, PageHeader } from "@/components/page-header";
 import { cell, fromLg, fromMd, numberCell, row, th } from "@/components/products-table";
 import { requireAdmin } from "@/lib/auth";
@@ -50,6 +51,7 @@ export default async function PurchasesPage({ searchParams }: PageProps<"/admin/
     <div className="motion-safe:animate-settle">
       <PageHeader
         title="Compras"
+        description="La mercancía que le compras al proveedor. Cada compra sube el stock del producto y actualiza su costo promedio."
         action={
           <Link href="/admin/compras/nueva" className={buttonStyles.primary}>
             Registrar compra
@@ -66,6 +68,17 @@ export default async function PurchasesPage({ searchParams }: PageProps<"/admin/
       </PageHeader>
 
       <FilterBar placeholder="Buscar por producto, proveedor o factura" values={{ q }} />
+      {purchases.length > 0 && (
+        <Glossary
+          title="¿Qué significa cada columna?"
+          terms={[
+            ["Costo unitario", "Lo que te cobró el proveedor por cada unidad, sin el envío."],
+            ["Flete", "El envío de toda la compra. Se reparte entre las unidades."],
+            ["Total", "Cantidad por costo unitario, más el flete. Es lo que salió de tu caja."],
+            ["Costo por unidad", "Total dividido entre la cantidad: el costo unitario con su parte del flete. Es el valor que entra al costo promedio del producto."],
+          ]}
+        />
+      )}
 
       {purchases.length === 0 && q ? (
         <NoMatches what="compra" />
@@ -78,7 +91,7 @@ export default async function PurchasesPage({ searchParams }: PageProps<"/admin/
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto border border-line bg-surface">
+        <div className="relative overflow-x-auto border border-line bg-surface">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-line">
               <tr>
@@ -89,7 +102,7 @@ export default async function PurchasesPage({ searchParams }: PageProps<"/admin/
                 <th className={`${th} ${fromMd} text-right`}>Costo unitario</th>
                 <th className={`${th} ${fromLg} text-right`}>Flete</th>
                 <th className={`${th} text-right`}>Total</th>
-                <th className={`${th} ${fromMd} text-right`}>Costo real / und</th>
+                <th className={`${th} ${fromMd} text-right`}>Costo por unidad</th>
                 <th className={th}>
                   <span className="sr-only">Acciones</span>
                 </th>
@@ -104,7 +117,7 @@ export default async function PurchasesPage({ searchParams }: PageProps<"/admin/
                   <td className={`${cell} py-4`}>
                     <Link
                       href={`/admin/productos/${purchase.product_id}`}
-                      className="font-medium underline decoration-transparent transition-colors duration-(--duration-quick) ease-smooth-out hover:decoration-ink"
+                      className="font-medium py-2 underline decoration-transparent transition-colors duration-(--duration-quick) ease-smooth-out hover:decoration-ink"
                     >
                       {purchase.name}
                     </Link>

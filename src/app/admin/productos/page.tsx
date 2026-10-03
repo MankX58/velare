@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { buttonStyles } from "@/components/button";
 import { FilterBar } from "@/components/filter-bar";
+import { Glossary } from "@/components/glossary";
 import { Fact, NoMatches, PageHeader } from "@/components/page-header";
 import { ProductsTable, type ProductRow } from "@/components/products-table";
 import { requireAdmin } from "@/lib/auth";
@@ -35,12 +36,13 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
   const brands = await sql`select distinct brand from products where brand is not null order by brand`;
 
   const inventoryValue = products.reduce((total, p) => total + p.inventory_value, 0);
-  const toRestock = products.filter((p) => p.alert !== "OK").length;
+  const inStock = products.filter((p) => p.stock > 0).length;
 
   return (
     <div className="motion-safe:animate-settle">
       <PageHeader
         title="Productos"
+        description="Tu catálogo. El precio lo pones tú; el stock, el costo y la ganancia los calcula el sistema con las compras y las ventas."
         action={
           <Link href="/admin/productos/nuevo" className={buttonStyles.primary}>
             Nuevo producto
@@ -50,7 +52,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
         {(products.length > 0 || filtering) && (
           <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-2">
             <Fact label="Productos">{products.length}</Fact>
-            <Fact label="Por reponer">{toRestock}</Fact>
+            <Fact label="Con stock">{inStock}</Fact>
             <Fact label="Inventario a costo">{formatCOP(inventoryValue)}</Fact>
           </dl>
         )}
@@ -88,7 +90,21 @@ export default async function ProductsPage({ searchParams }: PageProps<"/admin/p
           </p>
         </div>
       ) : (
-        <ProductsTable products={products} />
+        <>
+          <Glossary
+            title="¿Qué significa cada columna?"
+            terms={[
+              ["Precio", "Lo que paga el cliente por una unidad. Lo defines tú al crear o editar el producto."],
+              ["Costo promedio", "Lo que te ha costado cada unidad: todas las compras, con su flete, divididas entre las unidades compradas."],
+              ["Ganancia por unidad", "Precio menos costo promedio: lo que te deja cada unidad que vendes."],
+              ["Margen", "Qué parte del precio es ganancia. Con 30 %, de cada $100 que cobras te quedan $30."],
+              ["Stock", "Unidades que tienes: las compradas menos las vendidas. En negativo, vendiste sin tener y debes comprarlas."],
+              ["OK, Pedir, Agotado", "OK: hay unidades. Pedir: quedan tan pocas como el mínimo que pusiste en el producto. Agotado: no hay; se vende por encargo."],
+              ["Inventario a costo", "Lo que pagaste por las unidades que tienes: stock por costo promedio."],
+            ]}
+          />
+          <ProductsTable products={products} />
+        </>
       )}
     </div>
   );

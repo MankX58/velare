@@ -24,16 +24,6 @@ export const nextStatuses: Record<OrderStatus, OrderStatus[]> = {
   cancelled: [],
 };
 
-export const statusStyles: Record<OrderStatus, string> = {
-  pending: "bg-warn-soft text-warn",
-  payment_reported: "bg-warn-soft text-warn",
-  payment_confirmed: "bg-ok-soft text-ok",
-  preparing: "bg-ok-soft text-ok",
-  shipped: "bg-ok-soft text-ok",
-  delivered: "bg-mist text-ink-soft",
-  cancelled: "bg-danger-soft text-danger",
-};
-
 export type Order = {
   id: number;
   code: string;

@@ -1,4 +1,5 @@
 import { FilterBar } from "@/components/filter-bar";
+import { Glossary } from "@/components/glossary";
 import { Fact, NoMatches, PageHeader } from "@/components/page-header";
 import { cell, fromLg, fromMd, numberCell, row, th } from "@/components/products-table";
 import { requireAdmin } from "@/lib/auth";
@@ -29,6 +30,9 @@ export default async function SalesPage({ searchParams }: PageProps<"/admin/vent
   const params = await searchParams;
   const q = queryText(params.q);
   const cobro = queryText(params.cobro); // "cobrado" | "por-cobrar" | ""
+  // ?cliente=9 llega desde la lista de clientes: muestra solo lo que ha comprado esa persona.
+  const clienteId = Number(queryText(params.cliente));
+  const cliente = Number.isInteger(clienteId) && clienteId > 0 && clienteId < 2_000_000_000 ? clienteId : 0;
   const like = `%${q}%`;
 
   // Precio y costo salen de la línea del pedido: son los del día de la venta,
@@ -44,6 +48,7 @@ export default async function SalesPage({ searchParams }: PageProps<"/admin/vent
     where o.status not in ('pending', 'payment_reported', 'cancelled')
       and (${q} = '' or oi.product_name ilike ${like} or c.name ilike ${like})
       and (${cobro} = '' or (o.paid_on is not null) = (${cobro} = 'cobrado'))
+      and (${cliente} = 0 or o.customer_id = ${cliente})
     order by o.ordered_on desc, oi.id desc`) as SaleRow[];
 
   const sold = sales.reduce((sum, sale) => sum + sale.total, 0);
@@ -52,7 +57,11 @@ export default async function SalesPage({ searchParams }: PageProps<"/admin/vent
 
   return (
     <div className="motion-safe:animate-settle">
-      <PageHeader title="Ventas">
+      <PageHeader
+        title={cliente && sales[0]?.customer ? `Compras de ${sales[0].customer}` : "Ventas"}
+        description="Cada perfume vendido, con lo que cobraste, lo que te costó y lo que ganaste. Un pedido aparece aquí cuando confirmas su pago."
+        back={cliente ? { href: "/admin/clientes", label: "Volver a clientes" } : undefined}
+      >
         {sales.length > 0 && (
           <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-2">
             <Fact label="Ventas">{sales.length}</Fact>
@@ -65,7 +74,7 @@ export default async function SalesPage({ searchParams }: PageProps<"/admin/vent
 
       <FilterBar
         placeholder="Buscar por producto o cliente"
-        values={{ q, cobro }}
+        values={{ q, cobro, cliente: cliente ? String(cliente) : "" }}
         filters={[
           {
             name: "cobro",
@@ -78,7 +87,20 @@ export default async function SalesPage({ searchParams }: PageProps<"/admin/vent
         ]}
       />
 
-      {sales.length === 0 && (q || cobro) ? (
+      {sales.length > 0 && (
+        <Glossary
+          title="¿Qué significa cada columna?"
+          terms={[
+            ["Total", "Lo que cobraste por esa línea: cantidad por precio, menos el descuento si hubo."],
+            ["Costo", "Lo que te costaron esas unidades: cantidad por el costo promedio del día en que confirmaste el pago."],
+            ["Ganancia", "Total menos costo."],
+            ["Margen", "Ganancia dividida entre el total: qué parte de lo cobrado te quedó."],
+            ["Cobro", "Cobrado: el dinero ya entró a caja. Por cobrar: vendiste fiado y aún no te pagan; se marca como cobrado en Caja."],
+          ]}
+        />
+      )}
+
+      {sales.length === 0 && (q || cobro || cliente) ? (
         <NoMatches what="venta" />
       ) : sales.length === 0 ? (
         <div className="border border-line bg-surface px-6 py-14">

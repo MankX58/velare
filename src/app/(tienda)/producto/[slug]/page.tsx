@@ -3,9 +3,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { linkStyles } from "@/components/button";
 import { AddToCart } from "@/components/store/add-to-cart";
+import { Gallery } from "@/components/store/gallery";
 import { ProductCard, ProductLabel } from "@/components/store/product-tile";
 import { getProduct, listProducts } from "@/lib/catalog";
 import { formatCOP } from "@/lib/format";
+import { absoluteUrl } from "@/lib/site";
 
 // Título y descripción para buscadores y para la vista previa al compartir el enlace.
 export async function generateMetadata({ params }: PageProps<"/producto/[slug]">): Promise<Metadata> {
@@ -16,12 +18,38 @@ export async function generateMetadata({ params }: PageProps<"/producto/[slug]">
   const description =
     product.description ??
     `${title}${product.size_ml ? `, ${product.size_ml} ml` : ""}. ${formatCOP(product.list_price)} en Velare.`;
-  return { title, description, openGraph: { title, description } };
+  return {
+    title,
+    description,
+    // canonical: la dirección oficial de esta página, para que los buscadores no la cuenten dos veces.
+    alternates: { canonical: `/producto/${product.slug}` },
+    openGraph: { title, description, images: product.images.slice(0, 1) },
+  };
 }
 
 export default async function ProductPage({ params }: PageProps<"/producto/[slug]">) {
   const product = await getProduct((await params).slug);
   if (!product) notFound();
+
+  const title = [product.brand, product.name].filter(Boolean).join(" ");
+
+  // Datos del producto en el formato que leen los buscadores (schema.org), para que puedan
+  // mostrar el precio en los resultados. La disponibilidad solo se declara si hay stock.
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: title,
+    description: product.description ?? undefined,
+    brand: product.brand ? { "@type": "Brand", name: product.brand } : undefined,
+    image: product.images.length > 0 ? product.images.map(absoluteUrl) : undefined,
+    offers: {
+      "@type": "Offer",
+      url: absoluteUrl(`/producto/${product.slug}`),
+      priceCurrency: "COP",
+      price: product.list_price,
+      availability: product.in_stock ? "https://schema.org/InStock" : undefined,
+    },
+  };
 
   const sameBrand = product.brand
     ? (await listProducts({ marca: product.brand, limit: 5 })).filter((other) => other.id !== product.id).slice(0, 4)
@@ -36,13 +64,25 @@ export default async function ProductPage({ params }: PageProps<"/producto/[slug
 
   return (
     <main className="mx-auto w-full max-w-7xl flex-1 px-4 pt-8 pb-24 sm:px-8">
+      {/* El reemplazo de "<" evita que un texto del producto pueda cerrar la etiqueta script. */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       <Link href="/catalogo" className={`text-sm text-ink-soft ${linkStyles.default}`}>
         Volver al catálogo
       </Link>
 
       <div className="mt-8 grid items-start gap-10 lg:grid-cols-2 lg:gap-16">
-        <div className="group mx-auto w-full max-w-lg motion-safe:animate-settle lg:sticky lg:top-24">
-          <ProductLabel product={product} className="text-base sm:text-2xl" />
+        {/* data-sheen: un destello cruza la caja una vez, cuando la página termina de entrar. */}
+        <div
+          data-sheen
+          style={{ "--sheen-delay": "450ms" } as React.CSSProperties}
+          className="group mx-auto w-full max-w-lg motion-safe:animate-settle lg:sticky lg:top-24"
+        >
+          {/* Con fotos, la galería; sin fotos, la etiqueta con el nombre del perfume. */}
+          {product.images.length > 0 ? (
+            <Gallery images={product.images} alt={title} />
+          ) : (
+            <ProductLabel product={product} className="text-base sm:text-2xl" />
+          )}
         </div>
 
         <div className="lg:py-6">
@@ -59,16 +99,12 @@ export default async function ProductPage({ params }: PageProps<"/producto/[slug
           </p>
 
           <p className="mt-6 flex items-start gap-3 text-sm leading-relaxed text-ink-soft">
-            <span
-              className={`mt-0.5 shrink-0 px-2 py-1 text-[11px] leading-none font-medium tracking-[0.08em] uppercase ${
-                product.in_stock ? "bg-ok-soft text-ok" : "bg-mist text-ink-soft"
-              }`}
-            >
-              {product.in_stock ? "En stock" : "Bajo pedido"}
-            </span>
-            {product.in_stock
-              ? "Lo despachamos en cuanto confirmemos tu pago."
-              : "Lo pedimos al proveedor en cuanto confirmemos tu pago y luego te lo enviamos."}
+            {product.in_stock && (
+              <span className="mt-0.5 shrink-0 bg-ok-soft px-2 py-1 text-[11px] leading-none font-medium tracking-[0.08em] text-ok uppercase">
+                En stock
+              </span>
+            )}
+            Te lo enviamos después de confirmar tu pago.
           </p>
 
           <div className="mt-8">

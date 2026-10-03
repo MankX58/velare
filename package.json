@@ -11,12 +11,15 @@
     "db:import": "node --env-file=.env.local scripts/import-excel.mjs",
     "db:import:reset": "node --env-file=.env.local scripts/import-excel.mjs --reset",
     "db:admin": "node --env-file=.env.local scripts/make-admin.mjs",
-    "test": "node --test \"src/**/*.test.ts\""
+    "test": "node --test \"src/**/*.test.ts\"",
+    "db:descriptions": "node --env-file=.env.local scripts/set-descriptions.mjs",
+    "db:fotos": "node --env-file=.env.local scripts/link-photos.mjs"
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "^4.31.0",
     "@neondatabase/serverless": "^1.2.0",
     "@phosphor-icons/react": "^2.1.10",
+    "@vercel/blob": "^2.8.0",
     "next": "16.3.8",
     "react": "19.2.8",
     "react-dom": "19.2.8",

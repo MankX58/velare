@@ -1,14 +1,17 @@
 import Link from "next/link";
 import { linkStyles } from "./button";
 
-// Encabezado de una página del panel: enlace para volver (opcional), título y acción principal.
+// Encabezado de una página del panel: enlace para volver (opcional), título, acción principal
+// y una frase que dice para qué sirve la página.
 export function PageHeader({
   title,
+  description,
   back,
   action,
   children,
 }: {
   title: string;
+  description?: string;
   back?: { href: string; label: string };
   action?: React.ReactNode;
   children?: React.ReactNode; // línea de resumen bajo el título
@@ -24,6 +27,7 @@ export function PageHeader({
         <h1 className="font-display text-3xl text-balance">{title}</h1>
         {action}
       </div>
+      {description && <p className="mt-2 max-w-[70ch] text-sm leading-relaxed text-ink-soft">{description}</p>}
       {children}
     </div>
   );

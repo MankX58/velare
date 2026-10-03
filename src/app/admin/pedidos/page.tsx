@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { FilterBar } from "@/components/filter-bar";
+import { Glossary } from "@/components/glossary";
 import { Fact, NoMatches, PageHeader } from "@/components/page-header";
 import { cell, fromMd, numberCell, row, th } from "@/components/products-table";
 import { requireAdmin } from "@/lib/auth";
 import { sql } from "@/lib/db";
 import { queryText } from "@/lib/form";
 import { formatCOP, formatDate } from "@/lib/format";
-import { statusLabels, statusStyles, type OrderStatus } from "@/lib/orders";
+import { OrderStatusBadge } from "@/components/order-progress";
+import { statusLabels, type OrderStatus } from "@/lib/orders";
 
 export const metadata = { title: "Pedidos" };
 
@@ -43,7 +45,10 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ped
 
   return (
     <div className="motion-safe:animate-settle">
-      <PageHeader title="Pedidos">
+      <PageHeader
+        title="Pedidos"
+        description="Los pedidos que hacen los clientes en la tienda. Abre uno para verificar su pago, cambiar su estado o registrar la guía de envío."
+      >
         <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-2">
           <Fact label="Pedidos">{orders.length}</Fact>
           <Fact label="Pagos por verificar">{to_verify}</Fact>
@@ -59,6 +64,19 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ped
             label: "Todos los estados",
             options: Object.entries(statusLabels).map(([value, label]) => ({ value, label })),
           },
+        ]}
+      />
+
+      <Glossary
+        title="¿Qué significa cada estado?"
+        terms={[
+          ["Pendiente de pago", "El cliente hizo el pedido y aún no avisa que pagó. No cuenta como venta ni descuenta stock."],
+          ["Pago reportado", "El cliente dice que ya transfirió. Te toca revisar el banco y confirmar."],
+          ["Pago confirmado", "Viste el dinero. Desde aquí cuenta como venta, descuenta stock y entra a caja."],
+          ["Preparando", "Estás alistando o consiguiendo el producto."],
+          ["Enviado", "Ya lo despachaste. Si registraste la guía, el cliente la ve."],
+          ["Entregado", "El cliente lo recibió. Pedido cerrado."],
+          ["Cancelado", "No se hizo. No cuenta en ventas, stock ni caja."],
         ]}
       />
 
@@ -89,7 +107,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ped
                   <td className={`${cell} py-4`}>
                     <Link
                       href={`/admin/pedidos/${order.id}`}
-                      className="font-medium tabular-nums underline decoration-transparent transition-colors duration-(--duration-quick) ease-smooth-out hover:decoration-ink"
+                      className="font-medium tabular-nums py-2 underline decoration-transparent transition-colors duration-(--duration-quick) ease-smooth-out hover:decoration-ink"
                     >
                       {order.code}
                     </Link>
@@ -101,9 +119,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ped
                   <td className={`${cell} py-4`}>{order.customer ?? "Sin cliente"}</td>
                   <td className={numberCell}>{formatCOP(order.total)}</td>
                   <td className={`${cell} py-4`}>
-                    <span className={`inline-block px-2 py-1 text-[11px] leading-none font-medium tracking-[0.08em] whitespace-nowrap uppercase ${statusStyles[order.status]}`}>
-                      {statusLabels[order.status]}
-                    </span>
+                    <OrderStatusBadge status={order.status} />
                   </td>
                 </tr>
               ))}

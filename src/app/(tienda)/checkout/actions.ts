@@ -23,11 +23,10 @@ export async function createOrder(items: CartItem[], formData: FormData): Promis
 
   const form = readForm(formData);
   const name = form.text("name", { required: true, max: 80 });
-  const phone = form.text("phone", { required: true, max: 20 });
+  const phone = form.phone("phone", { required: true });
   const address = form.text("address", { required: true, max: 160 });
   const city = form.text("city", { required: true, max: 60 });
   const notes = form.text("notes", { max: 300 });
-  if (phone && !/^[+\d][\d\s-]{6,}$/.test(phone)) form.errors.phone = "Escribe un número de teléfono válido.";
   if (form.hasErrors()) return { errors: form.errors };
 
   const [{ pending }] = await sql`

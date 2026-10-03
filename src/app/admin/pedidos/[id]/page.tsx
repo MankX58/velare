@@ -2,7 +2,8 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { requireAdmin } from "@/lib/auth";
 import { formatCOP, formatDate } from "@/lib/format";
-import { getOrder, getOrderItems, nextStatuses, statusLabels, statusStyles } from "@/lib/orders";
+import { OrderProgress } from "@/components/order-progress";
+import { getOrder, getOrderItems, nextStatuses } from "@/lib/orders";
 import { ConfirmPayment, OrderForm } from "../order-actions";
 
 export const metadata = { title: "Pedido" };
@@ -24,13 +25,12 @@ export default async function AdminOrderPage({ params }: PageProps<"/admin/pedid
   return (
     <div className="motion-safe:animate-settle">
       <PageHeader title={order.code} back={{ href: "/admin/pedidos", label: "Volver a pedidos" }}>
-        <p className="mt-3 flex flex-wrap items-center gap-3 text-sm text-ink-soft">
-          <span className={`px-2 py-1 text-[11px] leading-none font-medium tracking-[0.08em] uppercase ${statusStyles[order.status]}`}>
-            {statusLabels[order.status]}
-          </span>
-          Pedido del {formatDate(order.ordered_on)}
-        </p>
+        <p className="mt-3 text-sm text-ink-soft">Pedido del {formatDate(order.ordered_on)}</p>
       </PageHeader>
+
+      <div className="mb-12 border-y border-line py-8">
+        <OrderProgress status={order.status} audience="admin" />
+      </div>
 
       <div className="grid items-start gap-12 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="flex flex-col gap-10">

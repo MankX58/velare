@@ -19,7 +19,7 @@ export function FilterBar({
   filters = [],
   values,
 }: {
-  placeholder: string;
+  placeholder?: string; // texto del buscador. Sin él, la barra solo tiene los filtros
   filters?: Filter[];
   values: Record<string, string>; // lo que está aplicado ahora mismo
 }) {
@@ -43,14 +43,16 @@ export function FilterBar({
 
   return (
     <div role="search" className="mb-6 flex flex-wrap items-center gap-3">
-      <input
-        type="search"
-        aria-label={placeholder}
-        placeholder={placeholder}
-        value={current.q ?? ""}
-        onChange={(event) => apply({ ...current, q: event.target.value }, 250)}
-        className={`${controlStyles} h-11 min-w-56 flex-1`}
-      />
+      {placeholder && (
+        <input
+          type="search"
+          aria-label={placeholder}
+          placeholder={placeholder}
+          value={current.q ?? ""}
+          onChange={(event) => apply({ ...current, q: event.target.value }, 250)}
+          className={`${controlStyles} h-11 min-w-56 flex-1`}
+        />
+      )}
       {filters.map((filter) => (
         <select
           key={filter.name}

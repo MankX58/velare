@@ -4,11 +4,13 @@ import { buttonStyles } from "@/components/button";
 import { ConfirmButton } from "@/components/confirm-button";
 import { PageHeader } from "@/components/page-header";
 import { StockBadge, type StockAlert } from "@/components/products-table";
+import { SummaryLine } from "@/components/summary-line";
 import { requireAdmin } from "@/lib/auth";
 import { sql } from "@/lib/db";
 import { formatCOP, formatPercent } from "@/lib/format";
 import { deleteProduct } from "../actions";
 import { ProductForm, type Product } from "../product-form";
+import { ProductImages } from "../product-images";
 
 export const metadata = { title: "Editar producto" };
 
@@ -34,12 +36,12 @@ export default async function EditProductPage({ params }: PageProps<"/admin/prod
 
   const [product] = (await sql`
     select p.id, p.sku, p.name, p.brand, p.audience, p.size_ml, p.category, p.description,
-           p.list_price, p.initial_stock, p.initial_unit_cost, p.reorder_point, p.is_active,
+           p.list_price, p.initial_stock, p.initial_unit_cost, p.reorder_point, p.is_active, p.images,
            s.units_purchased, s.units_sold, s.stock, s.avg_cost, s.unit_profit, s.margin, s.markup,
            s.inventory_value, s.alert, s.total_sales, s.gross_profit
     from products p
     join product_stats s on s.product_id = p.id
-    where p.id = ${id}`) as (Product & Stats)[];
+    where p.id = ${id}`) as (Product & Stats & { images: string[] })[];
   if (!product) notFound();
 
   return (
@@ -53,29 +55,53 @@ export default async function EditProductPage({ params }: PageProps<"/admin/prod
         <aside className="border border-line bg-surface p-6 lg:sticky lg:top-8">
           <h2 className="font-display text-xl">Calculado por el sistema</h2>
           <p className="mt-2 text-xs leading-relaxed text-ink-faint">
-            Sale de las compras y ventas registradas. Se actualiza solo.
+            Nadie escribe estos números: salen de las compras y ventas registradas y se actualizan solos.
           </p>
 
-          <dl className="mt-6 flex flex-col gap-3 text-sm">
-            <Stat label="Stock actual">
+          <dl className="mt-6 flex flex-col gap-4 text-sm">
+            <SummaryLine label="Stock actual" hint="Stock inicial, más lo comprado, menos lo vendido.">
               <span className="mr-3">{product.stock}</span>
               <StockBadge alert={product.alert} />
-            </Stat>
-            <Stat label="Unidades compradas">{product.units_purchased}</Stat>
-            <Stat label="Unidades vendidas">{product.units_sold}</Stat>
-            <Stat label="Costo promedio">{formatCOP(product.avg_cost)}</Stat>
-            <Stat label="Ganancia por unidad">{formatCOP(product.unit_profit)}</Stat>
-            <Stat label="Margen sobre precio">{formatPercent(product.margin)}</Stat>
-            <Stat label="Markup sobre costo">{formatPercent(product.markup)}</Stat>
-            <Stat label="Valor del inventario">{formatCOP(product.inventory_value)}</Stat>
-            <Stat label="Ventas acumuladas">{formatCOP(product.total_sales)}</Stat>
-            <Stat label="Utilidad bruta">{formatCOP(product.gross_profit)}</Stat>
+            </SummaryLine>
+            <SummaryLine label="Unidades compradas" hint="Suma de las compras registradas.">
+              {product.units_purchased}
+            </SummaryLine>
+            <SummaryLine label="Unidades vendidas" hint="En pedidos con el pago confirmado.">
+              {product.units_sold}
+            </SummaryLine>
+            <div className="border-t border-line" />
+            <SummaryLine label="Costo promedio" hint="Lo que te ha costado cada unidad, con flete.">
+              {formatCOP(product.avg_cost)}
+            </SummaryLine>
+            <SummaryLine label="Ganancia por unidad" hint="Precio de venta menos costo promedio.">
+              {formatCOP(product.unit_profit)}
+            </SummaryLine>
+            <SummaryLine label="Margen" hint="Ganancia por unidad dividida entre el precio.">
+              {formatPercent(product.margin)}
+            </SummaryLine>
+            <SummaryLine label="Ganancia sobre el costo" hint="Ganancia por unidad dividida entre el costo.">
+              {formatPercent(product.markup)}
+            </SummaryLine>
+            <div className="border-t border-line" />
+            <SummaryLine label="Inventario a costo" hint="Stock por costo promedio.">
+              {formatCOP(product.inventory_value)}
+            </SummaryLine>
+            <SummaryLine label="Vendido hasta hoy" hint="Lo cobrado por todas sus ventas.">
+              {formatCOP(product.total_sales)}
+            </SummaryLine>
+            <SummaryLine label="Ganancia hasta hoy" hint="Vendido menos el costo de las unidades vendidas.">
+              {formatCOP(product.gross_profit)}
+            </SummaryLine>
           </dl>
 
           <Link href={`/admin/compras/nueva?producto=${product.id}`} className={`mt-8 w-full ${buttonStyles.secondary}`}>
             Registrar una compra
           </Link>
         </aside>
+      </div>
+
+      <div className="mt-16 border-t border-line pt-10">
+        <ProductImages productId={product.id} images={product.images} />
       </div>
 
       <div className="mt-16 border-t border-line pt-6">
@@ -87,15 +113,6 @@ export default async function EditProductPage({ params }: PageProps<"/admin/prod
           redirectTo="/admin/productos"
         />
       </div>
-    </div>
-  );
-}
-
-function Stat({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-baseline justify-between gap-4">
-      <dt className="text-ink-soft">{label}</dt>
-      <dd className="text-right tabular-nums">{children}</dd>
     </div>
   );
 }

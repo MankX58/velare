@@ -66,13 +66,13 @@ export function CartView() {
       <ul className="border-b border-line">
         {lines.map((product) => (
           <li key={product.id} className="flex gap-4 border-t border-line py-6 sm:gap-6">
-            <Link href={`/producto/${product.slug}`} className="group w-20 shrink-0 sm:w-28">
+            <Link href={`/producto/${product.slug}`} tabIndex={-1} aria-hidden className="group w-20 shrink-0 sm:w-28">
               <ProductLabel product={product} className="text-[6px] sm:text-[9px]" />
             </Link>
             <div className="flex min-w-0 flex-1 flex-col gap-3">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
-                  <Link href={`/producto/${product.slug}`} className="font-medium underline decoration-transparent transition-colors duration-(--duration-quick) ease-smooth-out hover:decoration-ink">
+                  <Link href={`/producto/${product.slug}`} className="font-medium py-2 underline decoration-transparent transition-colors duration-(--duration-quick) ease-smooth-out hover:decoration-ink">
                     {product.name}
                   </Link>
                   <p className="mt-1 text-xs text-ink-faint">

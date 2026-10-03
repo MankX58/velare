@@ -11,7 +11,7 @@ export default async function NoAccessPage() {
   if (user.role === "admin") redirect("/admin");
 
   return (
-    <main className="flex flex-1 items-center px-6 py-16 sm:px-12">
+    <main id="contenido" className="flex flex-1 items-center px-6 py-16 sm:px-12">
       <div className="mx-auto w-full max-w-lg motion-safe:animate-unveil">
         <h1 className="font-display text-3xl leading-tight text-balance sm:text-4xl">
           Tu cuenta no tiene acceso al panel

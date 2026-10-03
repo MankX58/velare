@@ -179,8 +179,8 @@ export function ProductForm({
             className={`${inputStyles} py-2.5 leading-relaxed`}
           />
         </Field>
-        <label className="flex items-center gap-3 text-sm">
-          <input type="checkbox" name="is_active" defaultChecked={product?.is_active ?? true} className="size-4 accent-on-brand" />
+        <label className="flex min-h-11 items-center gap-3 text-sm">
+          <input type="checkbox" name="is_active" defaultChecked={product?.is_active ?? true} className="size-5 accent-brand" />
           Activo: el producto se muestra en la tienda
         </label>
       </section>

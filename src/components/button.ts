@@ -10,12 +10,13 @@ export const buttonStyles = {
   primary: `${base} bg-brand text-on-brand hover:bg-brand-strong`,
   // Acción secundaria: cancelar, volver.
   secondary: `${base} border border-line bg-surface text-ink hover:border-ink-faint`,
-  // Acción principal sobre una zona verde.
-  onBrand: `${base} bg-on-brand text-brand hover:bg-ink`,
+  // Acción principal sobre una zona verde: botón claro con texto verde.
+  onBrand: `${base} bg-on-brand text-brand hover:bg-mist`,
 };
 
 // Enlace de texto subrayado. `onBrand` para zonas verdes, `danger` para eliminar.
-const linkBase = "underline transition-colors duration-(--duration-quick) ease-smooth-out";
+// py-2 amplía la zona que se puede tocar sin mover el texto de su línea.
+const linkBase = "py-2 underline transition-colors duration-(--duration-quick) ease-smooth-out";
 
 export const linkStyles = {
   default: `${linkBase} decoration-line hover:decoration-ink`,

@@ -15,6 +15,7 @@ export function ConfirmButton({
   redirectTo,
   confirmLabel = "Sí, eliminar",
   failureTitle = "No se pudo eliminar",
+  danger = true,
 }: {
   action: () => Promise<FormState>;
   label: string;
@@ -23,10 +24,12 @@ export function ConfirmButton({
   redirectTo?: string;
   confirmLabel?: string;
   failureTitle?: string;
+  danger?: boolean; // false para acciones que no borran nada (marcar como cobrado): sin rojo
 }) {
   const [asking, setAsking] = useState(false);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
+  const style = danger ? linkStyles.danger : linkStyles.default;
 
   function confirm() {
     startTransition(async () => {
@@ -43,7 +46,7 @@ export function ConfirmButton({
 
   if (!asking) {
     return (
-      <button type="button" onClick={() => setAsking(true)} className={`text-sm ${linkStyles.danger}`}>
+      <button type="button" onClick={() => setAsking(true)} className={`text-sm ${style}`}>
         {label}
       </button>
     );
@@ -52,7 +55,7 @@ export function ConfirmButton({
   return (
     <span className="inline-flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-sm">
       <span className="text-ink-soft">{question}</span>
-      <button type="button" onClick={confirm} disabled={pending} className={linkStyles.danger}>
+      <button type="button" onClick={confirm} disabled={pending} className={style}>
         {pending ? "Un momento…" : confirmLabel}
       </button>
       <button type="button" onClick={() => setAsking(false)} disabled={pending} className={linkStyles.default}>

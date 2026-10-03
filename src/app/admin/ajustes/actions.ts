@@ -6,6 +6,31 @@ import { sql } from "@/lib/db";
 import { readForm, type FormState } from "@/lib/form";
 import type { StoreSettings } from "@/lib/orders";
 
+// Guarda los parámetros de las cuentas (lo que en el Excel era la hoja Config).
+// Cada uno es una fila de la tabla settings; los porcentajes se guardan como fracción (0.3 = 30 %).
+export async function saveFinanceSettings(formData: FormData): Promise<FormState> {
+  await requireAdmin();
+
+  const form = readForm(formData);
+  const values = {
+    opening_cash: form.money("openingCash", { required: true }),
+    monthly_sales_goal: form.money("monthlyGoal", { required: true }),
+    target_margin: form.percent("targetMargin", { required: true }),
+    payment_fee: form.percent("paymentFee", { required: true }),
+    vat: form.percent("vat", { required: true }),
+    reactivation_days: form.integer("reactivationDays", { required: true, min: 1, max: 3650 }),
+  };
+  if (form.hasErrors()) return { errors: form.errors };
+
+  await sql`
+    insert into settings (key, value)
+    select key, value from jsonb_each(${JSON.stringify(values)}::jsonb)
+    on conflict (key) do update set value = excluded.value`;
+
+  revalidatePath("/admin", "layout");
+  return { ok: true };
+}
+
 // Guarda los datos de pago y contacto que la tienda muestra a quien hace un pedido.
 export async function saveStoreSettings(formData: FormData): Promise<FormState> {
   await requireAdmin();

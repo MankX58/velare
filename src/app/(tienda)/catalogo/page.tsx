@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { buttonStyles } from "@/components/button";
 import { FilterBar } from "@/components/filter-bar";
 import { ProductCard } from "@/components/store/product-tile";
 import { listBrands, listProducts, sortOptions } from "@/lib/catalog";
@@ -7,6 +9,8 @@ import { queryText } from "@/lib/form";
 export const metadata: Metadata = {
   title: "Catálogo",
   description: "Todos los perfumes de Velare: busca por nombre o marca y filtra por público.",
+  // Con filtros (?marca=...) la página sigue siendo la misma para los buscadores.
+  alternates: { canonical: "/catalogo" },
 };
 
 const audiences = ["Hombre", "Mujer", "Unisex"];
@@ -61,6 +65,17 @@ export default async function CatalogPage({ searchParams }: PageProps<"/catalogo
           ))}
         </div>
       )}
+
+      {/* Si lo que busca no está, puede pedir el precio. La búsqueda viaja para no escribirla dos veces. */}
+      <aside className="mt-20 flex flex-wrap items-center justify-between gap-6 border-t border-line pt-10">
+        <div>
+          <h2 className="font-display text-3xl font-light tracking-tight">¿No encuentras tu perfume?</h2>
+          <p className="mt-2 text-sm leading-relaxed text-ink-soft">Dinos cuál buscas y te respondemos con el precio.</p>
+        </div>
+        <Link href={q ? `/cotizar?perfume=${encodeURIComponent(q)}` : "/cotizar"} className={buttonStyles.secondary}>
+          Cotizar un perfume
+        </Link>
+      </aside>
     </main>
   );
 }

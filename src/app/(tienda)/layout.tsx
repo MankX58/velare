@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { linkStyles } from "@/components/button";
-import { AccountLink, CartLink, navLink } from "@/components/store/header-links";
+import { CartLink } from "@/components/store/header-links";
+import { navLink, navText } from "@/components/store/nav-styles";
 import { Wordmark } from "@/components/wordmark";
+import { getCurrentUser } from "@/lib/auth";
 
 // ponytail: las páginas de la tienda consultan la base de datos en cada visita, así
 // un cambio de precio en el panel se ve al instante. Si el tráfico crece, pasar a
@@ -9,7 +11,10 @@ import { Wordmark } from "@/components/wordmark";
 export const dynamic = "force-dynamic";
 
 // Marco de la tienda pública: cabecera fija, contenido y pie.
-export default function StoreLayout({ children }: LayoutProps<"/">) {
+export default async function StoreLayout({ children }: LayoutProps<"/">) {
+  const user = await getCurrentUser();
+  const isAdmin = user?.role === "admin";
+
   return (
     <>
       <header className="sticky top-0 z-20 border-b border-line bg-paper/85 backdrop-blur-md">
@@ -17,37 +22,65 @@ export default function StoreLayout({ children }: LayoutProps<"/">) {
           <Link href="/" aria-label="Velare, inicio">
             <Wordmark className="text-sm" />
           </Link>
-          <nav aria-label="Principal" className="group/nav flex items-center gap-5 text-sm sm:gap-8">
-            <Link href="/catalogo" className={navLink}>
+          <nav aria-label="Principal" className="group/nav flex items-center gap-3 text-sm sm:gap-8">
+            <Link href="/catalogo" className={`${navText} ${navLink}`}>
               Catálogo
             </Link>
-            <AccountLink />
+            {/* En el teléfono no cabe: se llega a Cotizar desde la portada, el catálogo y el pie. */}
+            <Link href="/cotizar" className={`${navLink} hidden min-h-11 items-center sm:inline-flex`}>
+              Cotizar
+            </Link>
+            {user ? (
+              <>
+                {/* En el teléfono, a un administrador se le muestra Panel en lugar de Pedidos para que todo quepa. */}
+                <Link
+                  href="/pedidos"
+                  className={`${navLink} ${isAdmin ? "hidden min-h-11 items-center sm:inline-flex" : navText}`}
+                >
+                  Pedidos
+                </Link>
+                {isAdmin && (
+                  <Link href="/admin" className={`${navText} ${navLink}`}>
+                    Panel
+                  </Link>
+                )}
+              </>
+            ) : (
+              // /auth/login lo atiende Auth0: por eso es <a> y no <Link>.
+              <a href="/auth/login" className={`${navText} ${navLink}`}>
+                Entrar
+              </a>
+            )}
             <CartLink />
           </nav>
         </div>
       </header>
 
-      <div className="flex flex-1 flex-col">{children}</div>
+      <div id="contenido" className="flex flex-1 flex-col">
+        {children}
+      </div>
 
+      {/* Pie de una sola franja: marca, una frase y los enlaces. */}
       <footer className="border-t border-line">
-        <div className="mx-auto max-w-7xl px-4 pt-16 pb-10 sm:px-8">
-          <p className="font-display text-[clamp(3.5rem,14vw,11rem)] leading-none font-light tracking-tight text-on-brand">
-            Velare
-          </p>
-          <div className="mt-10 flex flex-wrap items-center justify-between gap-x-8 gap-y-4 text-sm text-ink-soft">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-8 gap-y-2 px-4 py-5 text-sm text-ink-soft sm:px-8">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-1">
+            <Wordmark className="text-xs text-ink" />
             <p>Perfumes y lociones internacionales. Envíos en Colombia.</p>
-            <nav aria-label="Pie de página" className="flex flex-wrap gap-x-6 gap-y-2">
-              <Link href="/catalogo" className={linkStyles.default}>
-                Catálogo
-              </Link>
-              <Link href="/carrito" className={linkStyles.default}>
-                Carrito
-              </Link>
-              <Link href="/admin" className={linkStyles.default}>
-                Panel
-              </Link>
-            </nav>
           </div>
+          <nav aria-label="Pie de página" className="flex flex-wrap gap-x-6">
+            <Link href="/catalogo" className={linkStyles.default}>
+              Catálogo
+            </Link>
+            <Link href="/cotizar" className={linkStyles.default}>
+              Cotizar
+            </Link>
+            <Link href="/carrito" className={linkStyles.default}>
+              Carrito
+            </Link>
+            <Link href="/admin" className={linkStyles.default}>
+              Panel
+            </Link>
+          </nav>
         </div>
       </footer>
     </>

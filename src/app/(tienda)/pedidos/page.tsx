@@ -4,7 +4,8 @@ import { buttonStyles, linkStyles } from "@/components/button";
 import { requireUser } from "@/lib/auth";
 import { sql } from "@/lib/db";
 import { formatCOP, formatDate } from "@/lib/format";
-import { statusLabels, statusStyles, type OrderStatus } from "@/lib/orders";
+import { OrderStatusBadge } from "@/components/order-progress";
+import type { OrderStatus } from "@/lib/orders";
 
 export const metadata: Metadata = { title: "Mis pedidos", robots: { index: false } };
 
@@ -56,9 +57,7 @@ export default async function MyOrdersPage() {
                 <span className="text-sm text-ink-soft">
                   {formatDate(order.ordered_on)}, {order.units} {order.units === 1 ? "unidad" : "unidades"}
                 </span>
-                <span className={`px-2 py-1 text-[11px] leading-none font-medium tracking-[0.08em] uppercase ${statusStyles[order.status]}`}>
-                  {statusLabels[order.status]}
-                </span>
+                <OrderStatusBadge status={order.status} />
                 <span className="font-medium tabular-nums">{formatCOP(order.total)}</span>
               </Link>
             </li>

@@ -3,7 +3,7 @@
 // Aspecto de un campo, sin ancho: lo usan las barras de filtros, donde cada control mide lo suyo.
 // Con aria-invalid el borde se pone rojo.
 export const controlStyles =
-  "border border-line bg-surface px-3 text-sm text-ink placeholder:text-ink-faint " +
+  "border border-line bg-surface px-3 text-base text-ink placeholder:text-ink-faint sm:text-sm " +
   "transition-colors duration-(--duration-quick) ease-smooth-out hover:border-ink-faint " +
   "focus:border-ink aria-invalid:border-danger";
 

@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { sql } from "./db";
 
 // Consultas de la tienda pública. Solo devuelven productos activos y solo los datos
@@ -13,6 +14,7 @@ export type StoreProduct = {
   category: string | null;
   description: string | null;
   list_price: number;
+  images: string[]; // fotos del producto; vacío = se muestra la etiqueta
   in_stock: boolean; // false = se vende bajo pedido
 };
 
@@ -26,7 +28,7 @@ export const sortOptions = [
 export async function listProducts({ q = "", marca = "", publico = "", orden = "", limit = 200 } = {}) {
   const like = `%${q}%`;
   return (await sql`
-    select p.id, p.slug, p.name, p.brand, p.audience, p.size_ml, p.category, p.description, p.list_price,
+    select p.id, p.slug, p.name, p.brand, p.audience, p.size_ml, p.category, p.description, p.list_price, p.images,
            s.stock > 0 as in_stock
     from products p
     join product_stats s on s.product_id = p.id
@@ -42,20 +44,21 @@ export async function listProducts({ q = "", marca = "", publico = "", orden = "
     limit ${limit}`) as StoreProduct[];
 }
 
-export async function getProduct(slug: string) {
+// cache(): si se pide el mismo producto dos veces en una visita (título y página), se consulta una sola.
+export const getProduct = cache(async (slug: string) => {
   const rows = (await sql`
-    select p.id, p.slug, p.name, p.brand, p.audience, p.size_ml, p.category, p.description, p.list_price,
+    select p.id, p.slug, p.name, p.brand, p.audience, p.size_ml, p.category, p.description, p.list_price, p.images,
            s.stock > 0 as in_stock
     from products p
     join product_stats s on s.product_id = p.id
     where p.is_active and p.slug = ${slug}`) as StoreProduct[];
   return rows[0];
-}
+});
 
 // Productos por id, para mostrar el carrito con precios actuales.
 export async function getProductsById(ids: number[]) {
   return (await sql`
-    select p.id, p.slug, p.name, p.brand, p.audience, p.size_ml, p.category, p.description, p.list_price,
+    select p.id, p.slug, p.name, p.brand, p.audience, p.size_ml, p.category, p.description, p.list_price, p.images,
            s.stock > 0 as in_stock
     from products p
     join product_stats s on s.product_id = p.id

@@ -6,6 +6,7 @@ import { useState } from "react";
 import { sileo } from "sileo";
 import { buttonStyles } from "@/components/button";
 import { Field, fieldProps, inputStyles } from "@/components/field";
+import { SummaryLine } from "@/components/summary-line";
 import { parseMoney } from "@/lib/form";
 import { formatCOP } from "@/lib/format";
 import { purchaseEffect } from "@/lib/inventory";
@@ -164,34 +165,18 @@ export function PurchaseForm({
           </p>
         ) : (
           <dl className="mt-6 flex flex-col gap-3 text-sm">
-            <Line label="Costo total">{formatCOP(effect.totalCost)}</Line>
-            <Line label="Costo real por unidad">{formatCOP(effect.realUnitCost)}</Line>
+            <SummaryLine label="Costo total">{formatCOP(effect.totalCost)}</SummaryLine>
+            <SummaryLine label="Costo real por unidad">{formatCOP(effect.realUnitCost)}</SummaryLine>
             <div className="my-2 border-t border-line" />
-            <Line label="Stock" from={String(product.stock)}>
+            <SummaryLine label="Stock" from={String(product.stock)}>
               {effect.newStock}
-            </Line>
-            <Line label="Costo promedio" from={formatCOP(product.avg_cost)}>
+            </SummaryLine>
+            <SummaryLine label="Costo promedio" from={formatCOP(product.avg_cost)}>
               {formatCOP(effect.newAvgCost)}
-            </Line>
+            </SummaryLine>
           </dl>
         )}
       </aside>
     </form>
-  );
-}
-
-// Una línea del resumen. Con `from` muestra el valor de antes, tachado, si es distinto del nuevo.
-function Line({ label, from, children }: { label: string; from?: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-baseline justify-between gap-4">
-      <dt className="text-ink-soft">{label}</dt>
-      <dd className="text-right tabular-nums">
-        {from && from !== String(children) && <s className="mr-2 text-ink-faint">{from}</s>}
-        {/* key: al cambiar el valor, el número vuelve a entrar con una transición corta. */}
-        <span key={String(children)} className="inline-block font-medium motion-safe:animate-swap">
-          {children}
-        </span>
-      </dd>
-    </div>
   );
 }

@@ -8,27 +8,29 @@
   /* Se quita la paleta por defecto de Tailwind: solo existen estos colores. */
   --color-*: initial;
 
-  /* Neutros fríos con un toque de verde (porcelana, no crema). */
-  --color-paper: oklch(0.982 0.004 160); /* fondo de página */
-  --color-surface: oklch(0.997 0.002 160); /* tablas, campos, superficies elevadas */
-  --color-mist: oklch(0.955 0.007 160); /* rellenos suaves, esqueletos de carga */
-  --color-line: oklch(0.895 0.01 160); /* bordes y divisores */
+  /* Toda la paleta sale del verde salvia de la marca (#596357, tono 136-140 en OKLCH).
+     Neutros casi blancos con una pizca de ese verde (porcelana, no crema). */
+  --color-paper: oklch(0.975 0.006 136); /* fondo de página */
+  --color-surface: oklch(0.995 0.003 136); /* tablas, campos, superficies elevadas */
+  --color-mist: oklch(0.945 0.01 136); /* rellenos suaves, esqueletos de carga */
+  --color-line: oklch(0.885 0.013 136); /* bordes y divisores */
 
   /* Texto. ink-faint no debe usarse sobre mist (no alcanza el contraste AA). */
-  --color-ink: oklch(0.21 0.025 160);
-  --color-ink-soft: oklch(0.44 0.02 160);
-  --color-ink-faint: oklch(0.54 0.015 160);
+  --color-ink: oklch(0.22 0.02 136);
+  --color-ink-soft: oklch(0.43 0.022 136);
+  --color-ink-faint: oklch(0.53 0.02 136);
 
-  /* El único color de marca: verde menta pastel. Botones, cabecera del panel, portada.
-     Es claro, así que el texto que va encima es verde muy oscuro (on-brand). */
-  --color-brand: oklch(0.8 0.075 160);
-  --color-brand-strong: oklch(0.74 0.085 160); /* al pasar el cursor */
-  --color-on-brand: oklch(0.23 0.05 160);
-  --color-on-brand-soft: oklch(0.37 0.05 160);
+  /* El único color de marca: verde salvia apagado. Botones, panel, portada y marcas
+     (barras, pasos cumplidos). Es oscuro, así que el texto que va encima es claro
+     (on-brand); el texto oscuro (ink) NO se lee sobre él. */
+  --color-brand: #596357;
+  --color-brand-strong: oklch(0.417 0.023 140); /* al pasar el cursor: un poco más oscuro */
+  --color-on-brand: oklch(0.975 0.008 136);
+  --color-on-brand-soft: oklch(0.9 0.018 136); /* texto secundario sobre el verde */
 
   /* Estados. Cada uno tiene su texto y su fondo suave. */
-  --color-ok: oklch(0.4 0.1 155);
-  --color-ok-soft: oklch(0.95 0.04 155);
+  --color-ok: oklch(0.4 0.09 150);
+  --color-ok-soft: oklch(0.95 0.035 150);
   --color-warn: oklch(0.45 0.1 70);
   --color-warn-soft: oklch(0.955 0.05 85);
   --color-danger: oklch(0.46 0.16 25);
@@ -74,6 +76,55 @@
       opacity: 0;
       translate: 0 18%;
       rotate: 0deg;
+    }
+  }
+  /* Una ventana que se abre (QR ampliado): crece un poco y aparece. */
+  --animate-modal: modal var(--duration-fast) var(--ease-smooth-out) both;
+
+  @keyframes modal {
+    from {
+      opacity: 0;
+      transform: scale(var(--scale-large));
+    }
+  }
+  /* Titular de la portada: cada palabra sube desde detrás de una máscara. */
+  --animate-rise: rise var(--duration-very-slow) var(--ease-smooth-out) both;
+
+  @keyframes rise {
+    from {
+      translate: 0 130%; /* más que su propio alto: empieza del todo oculta bajo la máscara */
+    }
+  }
+  /* Destello: una franja de luz cruza la caja de un perfume, como al girarla bajo una lámpara.
+     "backwards": al terminar vuelve a su sitio (fuera de la caja) y queda lista para el hover. */
+  --animate-sheen: sheen 900ms var(--ease-smooth-out) backwards;
+
+  @keyframes sheen {
+    to {
+      translate: 450% 0;
+    }
+  }
+  /* Bruma de la portada: una mancha de luz que se desplaza muy despacio, ida y vuelta.
+     Cada mancha define su recorrido con --mist-from y --mist-to. */
+  --animate-mist: mist 17s ease-in-out infinite alternate;
+
+  @keyframes mist {
+    from {
+      translate: var(--mist-from, -12% 6%);
+      scale: 1;
+    }
+    to {
+      translate: var(--mist-to, 14% -10%);
+      scale: 1.3;
+    }
+  }
+  /* Una explicación plegable que se abre: baja 4px y aparece. */
+  --animate-disclose: disclose var(--duration-fast) var(--ease-smooth-out) both;
+
+  @keyframes disclose {
+    from {
+      opacity: 0;
+      transform: translateY(calc(var(--distance-micro) * -1));
     }
   }
   /* Las barras de una gráfica crecen desde la izquierda al aparecer. */
@@ -146,7 +197,7 @@
    Sileo trae colores muy vivos. Aquí se cambian por tonos suaves de la misma
    familia que la marca, para que el aviso no desentone con la página. */
 body {
-  --sileo-state-success: oklch(0.8 0.075 160); /* el menta de la marca */
+  --sileo-state-success: oklch(0.86 0.05 140); /* un salvia claro, de la familia de la marca */
   --sileo-state-error: oklch(0.8 0.09 25);
   --sileo-state-warning: oklch(0.86 0.08 85);
   --sileo-state-info: oklch(0.85 0.04 200);
@@ -157,38 +208,64 @@ body {
 /* ---------- Lo que el navegador dibuja por su cuenta ---------- */
 @layer base {
   html {
-    caret-color: var(--color-on-brand);
+    scroll-padding-top: 5rem; /* la cabecera fija no tapa el destino de un ancla */
+    caret-color: var(--color-brand);
     scrollbar-color: var(--color-line) transparent;
   }
   ::selection {
     background: var(--color-brand);
     color: var(--color-on-brand);
   }
-  /* El foco usa el verde oscuro: el pastel no se vería sobre fondo claro. */
+  /* El foco del teclado va en el color del texto, que se ve sobre cualquier fondo claro. */
   :focus-visible {
-    outline: 2px solid var(--color-on-brand);
+    outline: 2px solid var(--color-ink);
     outline-offset: 2px;
   }
   a {
     text-underline-offset: 0.3em;
   }
-  /* Dentro de una zona verde la selección se invierte para seguir viéndose. */
+  /* Dentro de una zona verde, el foco y la selección pasan a claro para seguir viéndose. */
+  .bg-brand :focus-visible {
+    outline-color: var(--color-on-brand);
+  }
   .bg-brand ::selection {
     background: var(--color-on-brand);
     color: var(--color-brand);
   }
 }
 
-/* ---------- Aparecer al hacer scroll ----------
-   Con la clase "reveal" un bloque entra (sube y se enfoca) a medida que asoma en
-   pantalla. Es solo CSS: en navegadores que no lo soportan, o si la persona pidió
-   menos movimiento, el bloque simplemente está visible. */
+/* ---------- Animaciones ligadas al scroll ----------
+   Son solo CSS y avanzan con la posición de la página, no con el tiempo. En navegadores
+   que no lo soportan, o si la persona pidió menos movimiento, todo queda quieto y visible.
+   - "reveal": un bloque entra (sube y se enfoca) a medida que asoma en pantalla.
+   - "fan": las cajas de la portada se abren en abanico al bajar. Cada una dice hacia
+     dónde va con --fan (-1 izquierda, 0 centro, 1 derecha).
+   - "draw": una línea se dibuja de izquierda a derecha al asomar. Con --i (0, 1, 2...)
+     las líneas de una fila terminan una detrás de otra. */
+@keyframes fan {
+  to {
+    translate: calc(var(--fan, 0) * 14%) -9%;
+    rotate: calc(var(--fan, 0) * 7deg);
+  }
+}
+
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
     .reveal {
       animation: unveil linear both;
       animation-timeline: view();
       animation-range: entry 0% entry 45%;
+    }
+    .fan {
+      animation: fan linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0px 60vh;
+    }
+    .draw {
+      transform-origin: left;
+      animation: grow linear both;
+      animation-timeline: view();
+      animation-range: cover 0% cover calc(18% + var(--i, 0) * 7%);
     }
   }
 }

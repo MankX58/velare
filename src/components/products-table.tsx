@@ -55,10 +55,10 @@ export function ProductsTable({ products }: { products: ProductRow[] }) {
             <th className={th}>Producto</th>
             <th className={`${th} text-right`}>Precio</th>
             <th className={`${th} ${fromMd} text-right`}>Costo promedio</th>
-            <th className={`${th} ${fromLg} text-right`}>Ganancia</th>
+            <th className={`${th} ${fromLg} text-right`}>Ganancia por unidad</th>
             <th className={`${th} ${fromMd} text-right`}>Margen</th>
             <th className={`${th} text-right`}>Stock</th>
-            <th className={`${th} ${fromLg} text-right`}>Inventario</th>
+            <th className={`${th} ${fromLg} text-right`}>Inventario a costo</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-line">
@@ -67,7 +67,7 @@ export function ProductsTable({ products }: { products: ProductRow[] }) {
               <td className={`${cell} py-4`}>
                 <Link
                   href={`/admin/productos/${p.id}`}
-                  className="font-medium underline decoration-transparent transition-colors duration-(--duration-quick) ease-smooth-out hover:decoration-ink"
+                  className="font-medium py-2 underline decoration-transparent transition-colors duration-(--duration-quick) ease-smooth-out hover:decoration-ink"
                 >
                   {p.name}
                 </Link>

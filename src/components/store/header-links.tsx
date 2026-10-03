@@ -1,32 +1,11 @@
 "use client";
 
-import { useUser } from "@auth0/nextjs-auth0";
 import { ShoppingCartSimple } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useCart } from "@/lib/cart";
+import { navLink } from "./nav-styles";
 
-// Enlaces de la cabecera que dependen del navegador: la sesión y el carrito.
-// Igual que en el panel, los demás enlaces se atenúan al señalar uno (group/nav).
-export const navLink =
-  "transition duration-(--duration-medium) ease-smooth-out group-has-[a:hover]/nav:duration-(--duration-quick) " +
-  "[@media(hover:hover)]:group-has-[a:hover]/nav:not-hover:opacity-40";
-
-export function AccountLink() {
-  const { user, isLoading } = useUser();
-  if (isLoading) return null;
-
-  // Las rutas /auth/* usan <a> y no <Link>: las atiende Auth0, no son páginas de la app.
-  return user ? (
-    <Link href="/pedidos" className={navLink}>
-      Pedidos
-    </Link>
-  ) : (
-    <a href="/auth/login" className={navLink}>
-      Entrar
-    </a>
-  );
-}
-
+// El carrito de la cabecera. Es de cliente porque el carrito vive en el navegador.
 export function CartLink() {
   const { count } = useCart();
 

@@ -43,7 +43,7 @@ Proyecto en desarrollo.
 | `npm run db:import` | Importa el Excel de `data/CONTABILIDAD 1.xlsx` (solo si la base está vacía) |
 | `npm run db:import:reset` | Borra los datos del negocio y vuelve a importar el Excel |
 | `npm run db:admin tu@correo.com` | Convierte en administrador a un usuario que ya inició sesión |
-| `npm run db:descriptions` | Pone las descripciones de `db/descriptions.json` en los productos que no tienen |
+| `npm run db:descriptions` | Pone las descripciones de `db/descriptions.json` en los productos que no tienen. Con `-- --todas` reemplaza las de todos |
 | `npm run db:fotos` | Conecta las fotos de `public/productos` (nombradas por SKU: `P001.jpg`, `P001-2.jpg`) con sus productos |
 
 La carpeta `data/` no se sube al repositorio: copia ahí el Excel antes de importar.

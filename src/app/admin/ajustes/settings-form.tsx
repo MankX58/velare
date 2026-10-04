@@ -20,7 +20,7 @@ export function SettingsForm({ settings }: { settings: StoreSettings }) {
       <section className="flex flex-col gap-6">
         <h2 className="font-display text-xl">Datos para recibir pagos</h2>
         <p className="-mt-3 max-w-[60ch] text-sm leading-relaxed text-ink-soft">
-          Es lo que ve el cliente después de hacer un pedido, junto con el valor exacto y el código del pedido.
+          Es lo que ve el cliente después de hacer un pedido, junto con el valor exacto a pagar.
         </p>
         <div className="grid gap-6 sm:grid-cols-2">
           <Field label="Llave Bre-B o número de Nequi" name="brebKey" error={errors.brebKey}>

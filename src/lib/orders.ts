@@ -26,6 +26,10 @@ export const stepOf = (status: OrderStatus) => orderSteps.indexOf(status === "pr
 // Un pedido ya pagado que falta despachar.
 export const isToShip = (status: OrderStatus) => status === "payment_confirmed" || status === "preparing";
 
+// El cliente solo ve el código del pedido cuando el pago ya está confirmado.
+// Antes de eso (por pagar, pago en revisión o cancelado) el pedido se muestra sin código.
+export const showsCode = (status: OrderStatus) => stepOf(status) >= stepOf("payment_confirmed");
+
 export type Order = {
   id: number;
   code: string;

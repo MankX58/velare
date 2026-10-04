@@ -98,7 +98,7 @@ export default async function QuotePage({ searchParams }: PageProps<"/cotizar">)
           </section>
         ) : (
           <section aria-labelledby="mis-cotizaciones">
-            <h2 id="mis-cotizaciones" className="font-display text-2xl">
+            <h2 id="mis-cotizaciones" className="scroll-mt-24 font-display text-2xl">
               Tus cotizaciones
             </h2>
             {/* key: la lista vuelve a entrar cuando se agrega una cotización. */}

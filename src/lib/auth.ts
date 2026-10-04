@@ -8,6 +8,7 @@ export type User = {
   email: string | null;
   name: string | null;
   role: "customer" | "admin";
+  picture: string | null; // foto de la cuenta de Google; no se guarda, viene de la sesión
 };
 
 // Usuario de nuestra base de datos para la sesión actual, o null si no hay sesión.
@@ -18,8 +19,10 @@ export const getCurrentUser = cache(async (): Promise<User | null> => {
   if (!session) return null;
 
   const { sub, email, name } = session.user;
+  // Solo la foto de Google: con correo y contraseña Auth0 manda un avatar genérico.
+  const picture = sub.startsWith("google-oauth2|") ? (session.user.picture ?? null) : null;
   const existing = await sql`select id, email, name, role from users where auth0_sub = ${sub}`;
-  if (existing[0]) return existing[0] as User;
+  if (existing[0]) return { ...existing[0], picture } as User;
 
   // Primera visita con sesión: se crea la fila.
   const rows = await sql`
@@ -27,7 +30,7 @@ export const getCurrentUser = cache(async (): Promise<User | null> => {
     values (${sub}, ${email ?? null}, ${name ?? null})
     on conflict (auth0_sub) do update set email = excluded.email, name = excluded.name
     returning id, email, name, role`;
-  return rows[0] as User;
+  return { ...rows[0], picture } as User;
 });
 
 // Para páginas y acciones que necesitan una persona con sesión (hacer un pedido, ver sus pedidos).

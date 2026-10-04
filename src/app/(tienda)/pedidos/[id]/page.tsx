@@ -7,7 +7,7 @@ import { requireUser } from "@/lib/auth";
 import { formatCOP, formatDate, whatsappLink } from "@/lib/format";
 import { OrderProgress, OrderStatusBadge } from "@/components/order-progress";
 import { QrImage } from "@/components/store/qr-image";
-import { getOrder, getOrderItems, getStoreSettings, isToShip } from "@/lib/orders";
+import { getOrder, getOrderItems, getStoreSettings, isToShip, showsCode } from "@/lib/orders";
 import { ActionButton } from "@/components/action-button";
 import { cancelOrder, confirmDelivery } from "../actions";
 import { ReportPaymentForm } from "../report-payment-form";
@@ -25,7 +25,11 @@ export default async function OrderPage({ params }: PageProps<"/pedidos/[id]">) 
 
   const [items, store] = await Promise.all([getOrderItems(id), getStoreSettings()]);
   const total = order.items_total + order.shipping_fee;
-  const whatsappText = `Hola, hice el pedido ${order.code} por ${formatCOP(total)}.`;
+  // Sin pago confirmado no se muestra el código: el pedido se identifica por nombre y fecha.
+  const code = showsCode(order.status) ? order.code : null;
+  const whatsappText = code
+    ? `Hola, hice el pedido ${code} por ${formatCOP(total)}.`
+    : `Hola, soy ${order.shipping_name}. Hice un pedido el ${formatDate(order.ordered_on)} por ${formatCOP(total)}.`;
 
   return (
     <main className="mx-auto w-full max-w-7xl flex-1 px-4 pt-8 pb-24 sm:px-8">
@@ -34,7 +38,7 @@ export default async function OrderPage({ params }: PageProps<"/pedidos/[id]">) 
       </Link>
       <div className="mt-6 flex flex-wrap items-end justify-between gap-x-8 gap-y-3 motion-safe:animate-unveil">
         <div>
-          <h1 className="font-display text-5xl font-light tracking-tight tabular-nums sm:text-6xl">{order.code}</h1>
+          <h1 className="font-display text-5xl font-light tracking-tight tabular-nums sm:text-6xl">{code ?? "Tu pedido"}</h1>
           <p className="mt-2 text-sm text-ink-soft">Pedido del {formatDate(order.ordered_on)}</p>
         </div>
         <OrderStatusBadge status={order.status} />
@@ -61,14 +65,14 @@ export default async function OrderPage({ params }: PageProps<"/pedidos/[id]">) 
                 </div>
               ) : (
                 <p className="mt-4 leading-relaxed text-on-brand-soft">
-                  Te enviaremos los datos para pagar {formatCOP(total)}. Escríbenos con el código {order.code}.
+                  Te enviaremos los datos para pagar {formatCOP(total)}. Escríbenos por WhatsApp.
                 </p>
               )}
-              {/* Recordatorio: sin estos dos datos no se puede saber de quién es una transferencia. */}
+              {/* Recordatorio: sin el nombre y el aviso no se puede saber de quién es una transferencia. */}
               <ol className="mt-8 flex list-decimal flex-col gap-3 border-t border-on-brand/20 pt-6 pl-5 leading-relaxed">
                 <li>
-                  <strong className="font-medium">En el mensaje de la transferencia</strong> escribe tu nombre y el
-                  código <strong className="font-medium tabular-nums">{order.code}</strong>.
+                  <strong className="font-medium">En el mensaje de la transferencia</strong> escribe tu nombre
+                  completo.
                 </li>
                 <li>
                   <strong className="font-medium">Después de pagar</strong>, llena el campo de abajo y pulsa Ya pagué.

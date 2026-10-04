@@ -57,6 +57,31 @@
   --animate-marquee: marquee 40s linear infinite;
   /* Un número pequeño que aparece con un rebote corto (contador del carrito). */
   --animate-pop: pop var(--duration-very-slow) var(--ease-bounce) both;
+  /* Las cajitas del carrito de la cabecera saltan y caen sobre él con un par de rebotes. */
+  --animate-hop: hop 700ms ease-in-out both;
+
+  @keyframes hop {
+    0% {
+      opacity: 0;
+      translate: 0 3px;
+    }
+    15% {
+      opacity: 1;
+    }
+    35% {
+      translate: 0 -7px;
+    }
+    60% {
+      translate: 0 0;
+    }
+    78% {
+      translate: 0 -3px;
+    }
+    100% {
+      opacity: 1;
+      translate: 0 0;
+    }
+  }
   /* Las cajas de la portada llegan desde abajo, cada una con su giro final (--tilt). */
   --animate-deal: deal 900ms var(--ease-smooth-out) backwards;
 

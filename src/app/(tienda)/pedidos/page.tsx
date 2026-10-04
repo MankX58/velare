@@ -5,7 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { sql } from "@/lib/db";
 import { formatCOP, formatDate } from "@/lib/format";
 import { OrderStatusBadge } from "@/components/order-progress";
-import type { OrderStatus } from "@/lib/orders";
+import { showsCode, type OrderStatus } from "@/lib/orders";
 
 export const metadata: Metadata = { title: "Mis pedidos", robots: { index: false } };
 
@@ -53,7 +53,7 @@ export default async function MyOrdersPage() {
                 href={`/pedidos/${order.id}`}
                 className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 py-5 transition duration-(--duration-medium) ease-smooth-out group-has-[a:hover]/list:duration-(--duration-quick) [@media(hover:hover)]:group-has-[a:hover]/list:not-hover:opacity-45"
               >
-                <span className="font-display text-2xl tabular-nums">{order.code}</span>
+                <span className="font-display text-2xl tabular-nums">{showsCode(order.status) ? order.code : "Pedido"}</span>
                 <span className="text-sm text-ink-soft">
                   {formatDate(order.ordered_on)}, {order.units} {order.units === 1 ? "unidad" : "unidades"}
                 </span>

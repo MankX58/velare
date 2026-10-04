@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { linkStyles } from "@/components/button";
+import { AccountMenu } from "@/components/store/account-menu";
 import { CartLink } from "@/components/store/header-links";
-import { navLink, navText } from "@/components/store/nav-styles";
+import { navLink, navText, navUnderline } from "@/components/store/nav-styles";
 import { Wordmark } from "@/components/wordmark";
 import { getCurrentUser } from "@/lib/auth";
 
@@ -27,24 +28,12 @@ export default async function StoreLayout({ children }: LayoutProps<"/">) {
               Catálogo
             </Link>
             {/* En el teléfono no cabe: se llega a Cotizar desde la portada, el catálogo y el pie. */}
-            <Link href="/cotizar" className={`${navLink} hidden min-h-11 items-center sm:inline-flex`}>
+            <Link href="/cotizar" className={`${navLink} ${navUnderline} hidden min-h-11 items-center sm:inline-flex`}>
               Cotizar
             </Link>
             {user ? (
-              <>
-                {/* En el teléfono, a un administrador se le muestra Panel en lugar de Pedidos para que todo quepa. */}
-                <Link
-                  href="/pedidos"
-                  className={`${navLink} ${isAdmin ? "hidden min-h-11 items-center sm:inline-flex" : navText}`}
-                >
-                  Pedidos
-                </Link>
-                {isAdmin && (
-                  <Link href="/admin" className={`${navText} ${navLink}`}>
-                    Panel
-                  </Link>
-                )}
-              </>
+              // Auth0 pone el correo como nombre cuando la persona no dio uno: no se repite.
+              <AccountMenu name={user.name === user.email ? null : user.name} email={user.email} picture={user.picture} isAdmin={isAdmin} />
             ) : (
               // /auth/login lo atiende Auth0: por eso es <a> y no <Link>.
               <a href="/auth/login" className={`${navText} ${navLink}`}>
@@ -77,9 +66,11 @@ export default async function StoreLayout({ children }: LayoutProps<"/">) {
             <Link href="/carrito" className={linkStyles.default}>
               Carrito
             </Link>
-            <Link href="/admin" className={linkStyles.default}>
-              Panel
-            </Link>
+            {isAdmin && (
+              <Link href="/admin" className={linkStyles.default}>
+                Panel
+              </Link>
+            )}
           </nav>
         </div>
       </footer>

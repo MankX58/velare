@@ -18,9 +18,10 @@ export const metadata: Metadata = {
   applicationName: "Velare",
   openGraph: { siteName: "Velare", locale: "es_CO", type: "website" },
   twitter: { card: "summary_large_image" },
-  // Código que da Google Search Console para comprobar que el sitio es tuyo (ver README).
-  verification: { google: process.env.GOOGLE_SITE_VERIFICATION },
 };
+
+// Código que da Google Search Console para comprobar que el sitio es tuyo (ver README).
+const googleVerification = process.env.GOOGLE_SITE_VERIFICATION;
 
 // Color de la barra del navegador en el teléfono: el verde salvia de la marca (--color-brand).
 export const viewport: Viewport = { themeColor: "#596357" };
@@ -28,6 +29,9 @@ export const viewport: Viewport = { themeColor: "#596357" };
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="es" className={`${geist.variable} ${jost.variable} h-full antialiased`}>
+      {/* Va escrita aquí y no en `metadata`: así sale siempre al principio de la página, que es
+          donde la busca el verificador de Google, sin esperar a los datos de cada página. */}
+      <head>{googleVerification && <meta name="google-site-verification" content={googleVerification} />}</head>
       <body className="flex min-h-full flex-col bg-paper font-sans text-ink">
         {/* Lo primero que encuentra quien navega con teclado: salta la cabecera y va al contenido. */}
         <a

@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Fragment } from "react";
+import { Fragment, ViewTransition } from "react";
 import { buttonStyles } from "@/components/button";
-import { ProductCard, ProductLabel } from "@/components/store/product-tile";
+import { ProductCard, ProductLabel, transitionName } from "@/components/store/product-tile";
 import { countByAudience, listBrands, listProducts } from "@/lib/catalog";
 
 // El título y la descripción son los del sitio (layout raíz); aquí solo se fija la dirección oficial.
@@ -94,7 +94,9 @@ export default async function HomePage() {
                   }
                   className="group block rotate-(--tilt) shadow-[0_18px_40px_-18px_oklch(0.22_0.02_136/0.7)] transition duration-(--duration-fast) ease-smooth-out hover:-translate-y-3 hover:rotate-0 motion-safe:animate-deal"
                 >
-                  <ProductLabel product={product} tone={heroTones[index]} className="text-[10px] sm:text-sm" />
+                  <ViewTransition name={transitionName(product.id)} share="morph" default="none">
+                    <ProductLabel product={product} tone={heroTones[index]} className="text-[10px] sm:text-sm" />
+                  </ViewTransition>
                 </Link>
               </div>
             ))}

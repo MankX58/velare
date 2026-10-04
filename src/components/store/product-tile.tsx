@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { ViewTransition } from "react";
 import type { StoreProduct } from "@/lib/catalog";
 import { formatCOP } from "@/lib/format";
 
@@ -78,6 +79,9 @@ export function ProductLabel({
 }
 
 // Solo se anuncia lo que hay en stock; del resto no se dice nada.
+// Nombre que une la caja de un perfume en una lista con la de su página, para la transición entre ambas.
+export const transitionName = (productId: number) => `perfume-${productId}`;
+
 export const availability = (product: StoreProduct) => (product.in_stock ? "En stock" : "");
 
 // Tarjeta de producto para rejillas. Dentro de un contenedor "group/grid", las demás
@@ -88,7 +92,11 @@ export function ProductCard({ product, labelClassName }: { product: StoreProduct
       href={`/producto/${product.slug}`}
       className="group block transition duration-(--duration-medium) ease-smooth-out group-has-[a:hover]/grid:duration-(--duration-quick) hover:-translate-y-1 [@media(hover:hover)]:group-has-[a:hover]/grid:not-hover:opacity-45"
     >
-      <ProductLabel product={product} className={labelClassName} />
+      {/* Elemento compartido: al abrir el perfume, esta caja crece hasta su sitio en la página del
+          producto (y vuelve al regresar). Las dos llevan el mismo nombre; ver transitionName. */}
+      <ViewTransition name={transitionName(product.id)} share="morph" default="none">
+        <ProductLabel product={product} className={labelClassName} />
+      </ViewTransition>
       {/* La etiqueta sin foto ya dice marca y nombre; con foto hay que escribirlos debajo. */}
       {product.images.length > 0 && (
         <p className="mt-3 text-sm">

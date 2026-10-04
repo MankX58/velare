@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ViewTransition } from "react";
 import { linkStyles } from "@/components/button";
 import { AddToCart } from "@/components/store/add-to-cart";
 import { Gallery } from "@/components/store/gallery";
-import { ProductCard, ProductLabel } from "@/components/store/product-tile";
+import { ProductCard, ProductLabel, transitionName } from "@/components/store/product-tile";
 import { getProduct, listProducts } from "@/lib/catalog";
 import { formatCOP } from "@/lib/format";
 import { absoluteUrl } from "@/lib/site";
@@ -75,14 +76,17 @@ export default async function ProductPage({ params }: PageProps<"/producto/[slug
         <div
           data-sheen
           style={{ "--sheen-delay": "450ms" } as React.CSSProperties}
-          className="group mx-auto w-full max-w-lg motion-safe:animate-settle lg:sticky lg:top-24"
+          className="group mx-auto w-full max-w-lg lg:sticky lg:top-24"
         >
           {/* Con fotos, la galería; sin fotos, la etiqueta con el nombre del perfume. */}
-          {product.images.length > 0 ? (
-            <Gallery images={product.images} alt={title} />
-          ) : (
-            <ProductLabel product={product} className="text-base sm:text-2xl" />
-          )}
+          {/* Mismo nombre que la tarjeta del catálogo: la caja llega hasta aquí creciendo desde donde estaba. */}
+          <ViewTransition name={transitionName(product.id)} share="morph" default="none">
+            {product.images.length > 0 ? (
+              <Gallery images={product.images} alt={title} />
+            ) : (
+              <ProductLabel product={product} className="text-base sm:text-2xl" />
+            )}
+          </ViewTransition>
         </div>
 
         <div className="lg:py-6">

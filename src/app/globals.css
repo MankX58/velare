@@ -269,3 +269,34 @@ body {
     }
   }
 }
+
+/* ---------- Transición entre la lista y la página de un perfume ----------
+   La caja de un perfume es un "elemento compartido": al abrirlo, el navegador la lleva
+   desde su sitio en la lista hasta su sitio en la página (y de vuelta al regresar).
+   Se marca en el código con <ViewTransition name=... share="morph">. En navegadores
+   sin soporte, la página simplemente cambia. */
+::view-transition-group(.morph) {
+  animation-duration: var(--duration-slow);
+  animation-timing-function: var(--ease-smooth-out);
+}
+/* Un desenfoque breve a mitad de camino disimula el cambio de tamaño del texto. */
+::view-transition-image-pair(.morph) {
+  animation-name: morph-blur;
+}
+@keyframes morph-blur {
+  30% {
+    filter: blur(var(--blur-medium));
+  }
+}
+/* Los clics no se pierden mientras dura la transición. */
+::view-transition {
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+}

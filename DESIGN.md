@@ -61,6 +61,7 @@ Escala de transitions.dev, definida en `globals.css`. Cada valor se elige por lo
 | Titular de la portada | cada palabra sube desde detrás de una máscara (`motion-safe:animate-rise`), con 55 ms entre palabras |
 | Bruma de la portada | dos manchas de luz que se desplazan muy despacio tras las cajas (`motion-safe:animate-mist`). Es el único movimiento continuo de fondo; no se repite en otras zonas |
 | Destello de una caja | una franja de luz cruza la etiqueta del perfume al señalarla; con `data-sheen` en el contenedor también pasa una vez al cargar (portada y página de producto) |
+| De la lista a la página de un perfume | elemento compartido: la caja lleva `<ViewTransition name={transitionName(id)} share="morph">` en la tarjeta y en la página, y el navegador la mueve de un sitio al otro en 400 ms |
 | Abanico al bajar | clase `fan`: las cajas de la portada se abren con el scroll. Cada una indica su lado con `--fan` |
 | Línea que se dibuja | clase `draw`: la línea de cada paso de "Comprar es sencillo" crece al asomar |
 | Cinta de marcas | `motion-safe:animate-marquee`; una sola por página y se detiene al señalarla |

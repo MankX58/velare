@@ -75,6 +75,10 @@ export async function saveProduct(id: number | null, formData: FormData): Promis
 const MAX_IMAGES = 6;
 const MAX_IMAGE_BYTES = 1_500_000; // la foto llega ya reducida por el navegador: 1,5 MB es de sobra
 
+// Vercel conecta el almacén al proyecto con BLOB_STORE_ID (lo normal hoy) o con un
+// BLOB_READ_WRITE_TOKEN (almacenes antiguos, o para usarlo en tu computador).
+const blobConnected = () => Boolean(process.env.BLOB_STORE_ID || process.env.BLOB_READ_WRITE_TOKEN);
+
 // Sube una foto y la agrega al final de las fotos del producto. El navegador ya la
 // convirtió a JPEG y la redujo (ver shrink-image.ts), pero aquí se vuelve a comprobar todo.
 export async function addProductImage(productId: number, formData: FormData): Promise<FormState> {
@@ -91,17 +95,25 @@ export async function addProductImage(productId: number, formData: FormData): Pr
   const [product] = await sql`select sku, cardinality(images) as count from products where id = ${productId}`;
   if (!product) return { message: "El producto ya no existe." };
   if (product.count >= MAX_IMAGES) return { message: `Un producto puede tener hasta ${MAX_IMAGES} fotos. Quita alguna primero.` };
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+  if (!blobConnected()) {
     return { message: "Falta conectar el almacenamiento de fotos (Vercel Blob). Los pasos están en el README." };
   }
 
-  // addRandomSuffix: cada foto recibe un nombre único, así ninguna pisa a otra.
-  const blob = await put(`productos/${String(product.sku).toLowerCase()}.jpg`, file, {
-    access: "public",
-    addRandomSuffix: true,
-    contentType: "image/jpeg",
-  });
-  await sql`update products set images = array_append(images, ${blob.url}), updated_at = now() where id = ${productId}`;
+  let url: string;
+  try {
+    // addRandomSuffix: cada foto recibe un nombre único, así ninguna pisa a otra.
+    const blob = await put(`productos/${String(product.sku).toLowerCase()}.jpg`, file, {
+      access: "public",
+      addRandomSuffix: true,
+      contentType: "image/jpeg",
+    });
+    url = blob.url;
+  } catch (error) {
+    // Lo más común: el almacén se creó como privado. Las fotos de la tienda necesitan uno público.
+    console.error(error);
+    return { message: "Vercel Blob rechazó la foto. Revisa que el almacén sea público (Public), no privado." };
+  }
+  await sql`update products set images = array_append(images, ${url}), updated_at = now() where id = ${productId}`;
 
   revalidatePath("/", "layout");
   return { ok: true };
@@ -120,7 +132,7 @@ export async function removeProductImage(productId: number, url: string): Promis
   if (removed.length === 0) return { message: "Esa foto ya no está en el producto." };
 
   // Las fotos de la carpeta public (npm run db:fotos) no están en Blob: solo se desvinculan.
-  if (url.startsWith("https://") && process.env.BLOB_READ_WRITE_TOKEN) await del(url);
+  if (url.startsWith("https://") && blobConnected()) await del(url);
 
   revalidatePath("/", "layout");
   return { ok: true };

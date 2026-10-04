@@ -2,9 +2,11 @@ import type { MetadataRoute } from "next";
 import { sql } from "@/lib/db";
 import { siteUrl } from "@/lib/site";
 
-// El mapa se guarda en caché y se vuelve a generar como mucho una vez por hora,
-// así los productos nuevos aparecen sin consultar la base de datos en cada visita.
-export const revalidate = 3600;
+// El mapa se arma cuando un buscador lo pide, no al compilar: así publicar la app no
+// depende de que la base de datos esté disponible en ese momento.
+// ponytail: consulta la base en cada petición. Solo lo piden los buscadores, de vez en
+// cuando; si llegara a pesar, guardar en caché con `revalidate`.
+export const dynamic = "force-dynamic";
 
 // /sitemap.xml: la lista de páginas públicas para los buscadores.
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

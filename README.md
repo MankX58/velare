@@ -52,10 +52,10 @@ La carpeta `data/` no se sube al repositorio: copia ahí el Excel antes de impor
 
 Hay dos formas de ponerle fotos a un perfume. Sin fotos, la tienda muestra una etiqueta con su marca y su nombre.
 
-- **Desde el panel:** Productos → abrir un producto → Fotos → "Subir una foto". El navegador reduce la foto antes de enviarla y queda guardada en Vercel Blob. Necesita la variable `BLOB_READ_WRITE_TOKEN`:
-  1. En Vercel, abre tu proyecto → Storage → Create Database → Blob.
-  2. Conéctalo al proyecto: Vercel crea la variable sola para producción.
-  3. Para usarlo también en tu computador, copia el valor de esa variable a `.env.local`.
+- **Desde el panel:** Productos → abrir un producto → Fotos → "Subir una foto". El navegador reduce la foto antes de enviarla y queda guardada en Vercel Blob. Necesita un almacén de Vercel Blob conectado al proyecto:
+  1. En Vercel, abre tu proyecto → Storage → Create Database → Blob. Al crearlo elige acceso **Public**: las fotos de la tienda las ve cualquiera, y un almacén privado las rechaza.
+  2. Conéctalo al proyecto: Vercel crea sola la variable `BLOB_STORE_ID` para producción.
+  3. En tu computador las subidas necesitan un `BLOB_READ_WRITE_TOKEN` en `.env.local`. Sin él, todo funciona salvo el botón "Subir una foto".
 - **Desde una carpeta:** guarda las fotos en `public/productos` con el SKU como nombre (`P001.jpg`, `P001-2.jpg`) y ejecuta `npm run db:fotos`.
 
 ## Publicar en Vercel

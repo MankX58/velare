@@ -84,6 +84,7 @@ export default async function HomePage() {
               >
                 <Link
                   href={`/producto/${product.slug}`}
+                  prefetch
                   data-sheen
                   style={
                     {

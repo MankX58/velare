@@ -90,6 +90,10 @@ export function ProductCard({ product, labelClassName }: { product: StoreProduct
   return (
     <Link
       href={`/producto/${product.slug}`}
+      // prefetch: la página del perfume se trae completa en cuanto la tarjeta aparece en pantalla.
+      // Sin esto, en el sitio publicado la página llega en dos pasos y la caja no hace la transición.
+      // ponytail: una consulta por cada tarjeta visible. Si el catálogo crece mucho, precargar solo al señalarla.
+      prefetch
       className="group block transition duration-(--duration-medium) ease-smooth-out group-has-[a:hover]/grid:duration-(--duration-quick) hover:-translate-y-1 [@media(hover:hover)]:group-has-[a:hover]/grid:not-hover:opacity-45"
     >
       {/* Elemento compartido: al abrir el perfume, esta caja crece hasta su sitio en la página del

@@ -4,9 +4,8 @@ import { useState, useTransition } from "react";
 import { sileo } from "sileo";
 import { buttonStyles, linkStyles } from "@/components/button";
 import { Field, fieldProps, inputStyles } from "@/components/field";
-import { statusLabels, type OrderStatus } from "@/lib/orders";
 import { useServerForm } from "@/lib/use-server-form";
-import { confirmPayment, updateOrder } from "./actions";
+import { confirmPayment, saveOrderDetails, shipOrder } from "./actions";
 
 // Confirmar el pago pide un segundo clic: es la decisión que mueve plata e inventario.
 export function ConfirmPayment({ orderId }: { orderId: number }) {
@@ -24,7 +23,7 @@ export function ConfirmPayment({ orderId }: { orderId: number }) {
 
   if (!asking) {
     return (
-      <button type="button" onClick={() => setAsking(true)} className={`w-full ${buttonStyles.primary}`}>
+      <button type="button" onClick={() => setAsking(true)} className={buttonStyles.primary}>
         Confirmar pago recibido
       </button>
     );
@@ -44,22 +43,50 @@ export function ConfirmPayment({ orderId }: { orderId: number }) {
   );
 }
 
-// Estado, guía de envío y notas internas del pedido.
-export function OrderForm({
+// Despachar: la guía (opcional) y el botón que pasa el pedido a Enviado.
+export function ShipForm({ orderId, tracking }: { orderId: number; tracking: string | null }) {
+  const { state, pending, busy, handleSubmit } = useServerForm(shipOrder.bind(null, orderId), () => {
+    sileo.success({ title: "Pedido marcado como enviado" });
+  });
+  const errors = state.errors ?? {};
+
+  return (
+    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
+      {state.message && (
+        <p role="alert" className="text-sm text-danger">
+          {state.message}
+        </p>
+      )}
+      <Field
+        label="Guía de envío (opcional)"
+        name="tracking"
+        error={errors.tracking}
+        hint="Transportadora y número. El cliente la ve en su pedido. Déjala vacía si lo entregas en persona."
+      >
+        <input {...fieldProps("tracking", errors.tracking)} defaultValue={tracking ?? ""} className={`${inputStyles} h-11`} />
+      </Field>
+      <button type="submit" disabled={busy} className={`self-start ${buttonStyles.primary}`}>
+        {pending ? "Guardando…" : "Marcar como enviado"}
+      </button>
+    </form>
+  );
+}
+
+// Guía y notas internas. No cambia el estado del pedido.
+// `showTracking`: la guía solo se edita aquí cuando el pedido ya salió; antes va en ShipForm.
+export function DetailsForm({
   orderId,
-  status,
-  options,
   tracking,
   notes,
+  showTracking,
 }: {
   orderId: number;
-  status: OrderStatus;
-  options: OrderStatus[]; // estados a los que puede pasar
   tracking: string | null;
   notes: string | null;
+  showTracking: boolean;
 }) {
-  const { state, pending, busy, handleSubmit } = useServerForm(updateOrder.bind(null, orderId), () => {
-    sileo.success({ title: "Pedido actualizado" });
+  const { state, pending, busy, handleSubmit } = useServerForm(saveOrderDetails.bind(null, orderId), () => {
+    sileo.success({ title: "Guardado" });
   });
   const errors = state.errors ?? {};
 
@@ -70,20 +97,13 @@ export function OrderForm({
           {state.message}
         </p>
       )}
-      {/* key: tras guardar, el selector vuelve a montarse con el estado nuevo. */}
-      <Field label="Estado" name="status" error={errors.status}>
-        <select key={status} {...fieldProps("status", errors.status)} defaultValue={status} className={`${inputStyles} h-11`}>
-          <option value={status}>{statusLabels[status]}</option>
-          {options.map((option) => (
-            <option key={option} value={option}>
-              Pasar a: {statusLabels[option]}
-            </option>
-          ))}
-        </select>
-      </Field>
-      <Field label="Guía de envío" name="tracking" error={errors.tracking} hint="Transportadora y número. El cliente la ve en su pedido.">
-        <input {...fieldProps("tracking", errors.tracking)} defaultValue={tracking ?? ""} className={`${inputStyles} h-11`} />
-      </Field>
+      {showTracking ? (
+        <Field label="Guía de envío" name="tracking" error={errors.tracking} hint="Transportadora y número. El cliente la ve en su pedido.">
+          <input {...fieldProps("tracking", errors.tracking)} defaultValue={tracking ?? ""} className={`${inputStyles} h-11`} />
+        </Field>
+      ) : (
+        <input type="hidden" name="tracking" value={tracking ?? ""} />
+      )}
       <Field label="Notas internas" name="admin_notes" error={errors.admin_notes} hint="Solo las ve el equipo.">
         <textarea
           {...fieldProps("admin_notes", errors.admin_notes)}

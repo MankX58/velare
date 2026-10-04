@@ -8,7 +8,7 @@ import { sql } from "@/lib/db";
 import { queryText } from "@/lib/form";
 import { formatCOP, formatDate } from "@/lib/format";
 import { OrderStatusBadge } from "@/components/order-progress";
-import { statusLabels, type OrderStatus } from "@/lib/orders";
+import { isToShip, type OrderStatus } from "@/lib/orders";
 
 export const metadata = { title: "Pedidos" };
 
@@ -21,6 +21,23 @@ type OrderRow = {
   channel: string | null;
   total: number;
 };
+
+// Filtro de estado. "Por pagar" no está: esos pedidos no aparecen en el panel.
+const statusOptions = [
+  { value: "payment_reported", label: "Pago en revisión" },
+  { value: "payment_confirmed", label: "Pagado, por enviar" },
+  { value: "shipped", label: "Enviado" },
+  { value: "delivered", label: "Entregado" },
+  { value: "cancelled", label: "Cancelado" },
+];
+
+// Lo que le toca hacer al dueño en cada estado; vacío si no hay nada que hacer.
+function todo(status: OrderStatus) {
+  if (status === "payment_reported") return "Te toca: confirmar el pago";
+  if (isToShip(status)) return "Te toca: enviarlo";
+  if (status === "shipped") return "Falta: marcarlo como entregado";
+  return "";
+}
 
 export default async function OrdersPage({ searchParams }: PageProps<"/admin/pedidos">) {
   await requireAdmin();
@@ -37,21 +54,29 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ped
     from orders o
     left join customers c on c.id = o.customer_id
     where (${q} = '' or o.code ilike ${like} or c.name ilike ${like} or o.shipping_name ilike ${like})
-      and (${estado} = '' or o.status = ${estado})
+      and (${estado} = '' or o.status = ${estado} or (${estado} = 'payment_confirmed' and o.status = 'preparing'))
+      -- Un pedido de la tienda no aparece hasta que el cliente avisa que pagó (ni si lo
+      -- canceló antes de avisar). Buscándolo por código o nombre sí sale, por si hace falta.
+      and (${q} <> '' or o.user_id is null or o.payment_reported_at is not null
+           or o.status not in ('pending', 'cancelled'))
     order by o.id desc`) as OrderRow[];
 
   // Lo que pide atención: pagos reportados que hay que revisar en el banco.
-  const [{ to_verify }] = await sql`select count(*)::int as to_verify from orders where status = 'payment_reported'`;
+  const [{ to_verify, to_ship }] = await sql`
+    select count(*) filter (where status = 'payment_reported')::int as to_verify,
+           count(*) filter (where status in ('payment_confirmed', 'preparing'))::int as to_ship
+    from orders`;
 
   return (
     <div className="motion-safe:animate-settle">
       <PageHeader
         title="Pedidos"
-        description="Los pedidos que hacen los clientes en la tienda. Abre uno para verificar su pago, cambiar su estado o registrar la guía de envío."
+        description="Los pedidos de la tienda aparecen aquí cuando el cliente avisa que pagó. Abre uno y pulsa el botón de Qué sigue: confirmar el pago, marcarlo como enviado o como entregado."
       >
         <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-2">
           <Fact label="Pedidos">{orders.length}</Fact>
-          <Fact label="Pagos por verificar">{to_verify}</Fact>
+          <Fact label="Pagos por confirmar">{to_verify}</Fact>
+          <Fact label="Por enviar">{to_ship}</Fact>
         </dl>
       </PageHeader>
 
@@ -62,7 +87,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ped
           {
             name: "estado",
             label: "Todos los estados",
-            options: Object.entries(statusLabels).map(([value, label]) => ({ value, label })),
+            options: statusOptions,
           },
         ]}
       />
@@ -70,13 +95,12 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ped
       <Glossary
         title="¿Qué significa cada estado?"
         terms={[
-          ["Pendiente de pago", "El cliente hizo el pedido y aún no avisa que pagó. No cuenta como venta ni descuenta stock."],
-          ["Pago reportado", "El cliente dice que ya transfirió. Te toca revisar el banco y confirmar."],
-          ["Pago confirmado", "Viste el dinero. Desde aquí cuenta como venta, descuenta stock y entra a caja."],
-          ["Preparando", "Estás alistando o consiguiendo el producto."],
-          ["Enviado", "Ya lo despachaste. Si registraste la guía, el cliente la ve."],
+          ["Pago en revisión", "El cliente avisó que ya transfirió. Te toca revisar el banco y confirmar el pago."],
+          ["Pagado, por enviar", "Viste el dinero. Ya cuenta como venta, descuenta stock y entra a caja. Te toca enviarlo."],
+          ["Enviado", "Ya lo despachaste. Si registraste la guía, el cliente la ve. Tú o el cliente lo marcan como entregado."],
           ["Entregado", "El cliente lo recibió. Pedido cerrado."],
           ["Cancelado", "No se hizo. No cuenta en ventas, stock ni caja."],
+          ["¿Y los que no han pagado?", "Un pedido sin aviso de pago no aparece en esta lista. Si necesitas verlo, búscalo por su código o por el nombre del cliente."],
         ]}
       />
 
@@ -86,7 +110,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ped
         <div className="border border-line bg-surface px-6 py-14">
           <h2 className="font-medium">Todavía no hay pedidos</h2>
           <p className="mt-2 max-w-[60ch] text-sm leading-relaxed text-ink-soft">
-            Cuando alguien haga un pedido en la tienda, aparecerá aquí para que verifiques su pago.
+            Cuando alguien haga un pedido en la tienda y avise que pagó, aparecerá aquí para que confirmes su pago.
           </p>
         </div>
       ) : (
@@ -120,6 +144,7 @@ export default async function OrdersPage({ searchParams }: PageProps<"/admin/ped
                   <td className={numberCell}>{formatCOP(order.total)}</td>
                   <td className={`${cell} py-4`}>
                     <OrderStatusBadge status={order.status} />
+                    {todo(order.status) && <p className="mt-1.5 text-xs text-ink-soft">{todo(order.status)}</p>}
                   </td>
                 </tr>
               ))}

@@ -2,9 +2,12 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { requireAdmin } from "@/lib/auth";
 import { formatCOP, formatDate } from "@/lib/format";
-import { OrderProgress } from "@/components/order-progress";
-import { getOrder, getOrderItems, nextStatuses } from "@/lib/orders";
-import { ConfirmPayment, OrderForm } from "../order-actions";
+import { OrderProgress, statusHints } from "@/components/order-progress";
+import { ActionButton } from "@/components/action-button";
+import { ConfirmButton } from "@/components/confirm-button";
+import { getOrder, getOrderItems, isToShip } from "@/lib/orders";
+import { cancelOrder, deleteOrder, deliverOrder } from "../actions";
+import { ConfirmPayment, DetailsForm, ShipForm } from "../order-actions";
 
 export const metadata = { title: "Pedido" };
 
@@ -21,6 +24,8 @@ export default async function AdminOrderPage({ params }: PageProps<"/admin/pedid
   const items = await getOrderItems(id);
   const total = order.items_total + order.shipping_fee;
   const awaitingPayment = order.status === "pending" || order.status === "payment_reported";
+  const toShip = isToShip(order.status);
+  const closed = order.status === "delivered" || order.status === "cancelled";
 
   return (
     <div className="motion-safe:animate-settle">
@@ -28,9 +33,31 @@ export default async function AdminOrderPage({ params }: PageProps<"/admin/pedid
         <p className="mt-3 text-sm text-ink-soft">Pedido del {formatDate(order.ordered_on)}</p>
       </PageHeader>
 
-      <div className="mb-12 border-y border-line py-8">
+      <div className="mb-8 border-y border-line py-8">
         <OrderProgress status={order.status} audience="admin" />
       </div>
+
+      {/* Qué sigue: la única acción que mueve el pedido al paso siguiente. */}
+      {!closed && (
+        <section className="mb-12 border border-line bg-surface p-6 sm:p-8">
+          <h2 className="font-display text-2xl">Qué sigue</h2>
+          <p className="mt-2 mb-6 max-w-[60ch] text-sm leading-relaxed text-ink-soft">
+            {statusHints.admin[order.status]}
+            {awaitingPayment && ` Deben llegar ${formatCOP(total)}. Confirma solo después de ver la transferencia en tu banco: una captura de pantalla no es prueba.`}
+          </p>
+          {order.payment_reference && awaitingPayment && (
+            <p className="mb-6 text-sm">
+              <span className="text-ink-soft">El cliente escribió al avisar: </span>
+              {order.payment_reference}
+            </p>
+          )}
+          {awaitingPayment && <ConfirmPayment orderId={order.id} />}
+          {toShip && <ShipForm orderId={order.id} tracking={order.tracking} />}
+          {order.status === "shipped" && (
+            <ActionButton action={deliverOrder.bind(null, order.id)} label="Marcar como entregado" successMessage="Pedido entregado" />
+          )}
+        </section>
+      )}
 
       <div className="grid items-start gap-12 lg:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="flex flex-col gap-10">
@@ -80,15 +107,39 @@ export default async function AdminOrderPage({ params }: PageProps<"/admin/pedid
           </section>
 
           <section>
-            <h2 className="mb-4 font-display text-xl">Estado y envío</h2>
-            <OrderForm
+            <h2 className="mb-4 font-display text-xl">{toShip || awaitingPayment ? "Notas" : "Guía y notas"}</h2>
+            <DetailsForm
               orderId={order.id}
-              status={order.status}
-              options={nextStatuses[order.status]}
               tracking={order.tracking}
               notes={order.admin_notes}
+              showTracking={!toShip && !awaitingPayment}
             />
           </section>
+
+          {/* Cancelar deja el pedido a la vista como cancelado; borrar lo quita del todo. */}
+          {(awaitingPayment || toShip || order.status === "cancelled") && (
+            <div className="flex flex-wrap gap-x-8 gap-y-3 border-t border-line pt-6">
+              {order.status !== "cancelled" && (
+                <ConfirmButton
+                  action={cancelOrder.bind(null, order.id)}
+                  label="Cancelar el pedido"
+                  question="¿Cancelar este pedido? No contará en ventas, stock ni caja."
+                  confirmLabel="Sí, cancelar"
+                  failureTitle="No se pudo cancelar"
+                  successMessage="Pedido cancelado"
+                />
+              )}
+              <ConfirmButton
+                action={deleteOrder.bind(null, order.id)}
+                label="Borrar el pedido"
+                question={`¿Borrar ${order.code} para siempre? ${toShip ? "Ya está pagado: saldrá de ventas y de caja. " : ""}No se puede deshacer.`}
+                confirmLabel="Sí, borrar"
+                failureTitle="No se pudo borrar"
+                successMessage="Pedido borrado"
+                redirectTo="/admin/pedidos"
+              />
+            </div>
+          )}
         </div>
 
         <aside className="border border-line bg-surface p-6 lg:sticky lg:top-8">
@@ -113,16 +164,6 @@ export default async function AdminOrderPage({ params }: PageProps<"/admin/pedid
               </div>
             )}
           </dl>
-
-          {awaitingPayment && (
-            <div className="mt-6 border-t border-line pt-6">
-              <p className="mb-4 text-xs leading-relaxed text-ink-soft">
-                {order.status === "pending" && "El cliente todavía no ha avisado que pagó. "}
-                Confirma solo después de ver la transferencia en tu banco: una captura de pantalla no es prueba.
-              </p>
-              <ConfirmPayment orderId={order.id} />
-            </div>
-          )}
         </aside>
       </div>
     </div>

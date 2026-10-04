@@ -1,5 +1,6 @@
 import { CaretRight } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
+import { Counter, GoalGauge, MoneyDonut, MonthlyBars } from "@/components/arc-charts";
 import { linkStyles } from "@/components/button";
 import { FilterBar } from "@/components/filter-bar";
 import { Glossary } from "@/components/glossary";
@@ -113,14 +114,14 @@ export default async function SummaryPage({ searchParams }: PageProps<"/admin">)
   const pending = [
     {
       n: totals.to_verify,
-      text: count(totals.to_verify, "pago reportado por verificar", "pagos reportados por verificar"),
+      text: count(totals.to_verify, "pago por confirmar", "pagos por confirmar"),
       href: "/admin/pedidos?estado=payment_reported",
       action: "Ir a Pedidos",
     },
     {
       n: totals.to_ship,
-      text: count(totals.to_ship, "pedido pagado por alistar o enviar", "pedidos pagados por alistar o enviar"),
-      href: "/admin/pedidos",
+      text: count(totals.to_ship, "pedido pagado por enviar", "pedidos pagados por enviar"),
+      href: "/admin/pedidos?estado=payment_confirmed",
       action: "Ir a Pedidos",
     },
     {
@@ -149,6 +150,14 @@ export default async function SummaryPage({ searchParams }: PageProps<"/admin">)
   // Meta del mes en curso.
   const monthSold = months.find((month) => month.month === thisMonth)?.sold ?? 0;
   const goalShare = settings.monthlyGoal > 0 ? monthSold / settings.monthlyGoal : 0;
+
+  // Rango que cubren las gráficas por mes: "octubre de 2026" o "agosto de 2026 a octubre de 2026".
+  const monthsPeriod =
+    months.length === 0
+      ? ""
+      : months.length === 1
+        ? monthLabel(months[0].month)
+        : `${monthLabel(months[0].month)} a ${monthLabel(months[months.length - 1].month)}`;
 
   // Desde el inicio: lo invertido frente a lo vendido.
   const allTimeProfit = totals.sold - totals.cost_of_sales;
@@ -193,59 +202,40 @@ export default async function SummaryPage({ searchParams }: PageProps<"/admin">)
         <h2 id="hoy" className="font-display text-xl">
           Cómo está el negocio hoy
         </h2>
-        <dl className="mt-6 grid gap-x-10 gap-y-8 sm:grid-cols-3">
+        {/* Tres cifras y, si hay meta, su medidor. La rejilla comparte bordes para que se lea como un solo tablero. */}
+        <div className={`mt-6 grid gap-px border border-line bg-line sm:grid-cols-2 ${settings.monthlyGoal > 0 ? "xl:grid-cols-4" : "lg:grid-cols-3"}`}>
           <Stat
             label="Saldo de caja"
-            value={formatCOP(cash.closing)}
+            value={cash.closing}
             danger={cash.closing < 0}
             hint="El dinero que tienes hoy: el saldo con el que empezaste, más lo que ha entrado, menos lo que ha salido."
             link={{ href: "/admin/caja", label: "Ver la cuenta en Caja" }}
           />
           <Stat
             label="Por cobrar"
-            value={formatCOP(totals.receivable)}
+            value={totals.receivable}
             hint="Ventas que ya hiciste y que todavía no te han pagado. No están en la caja."
             link={{ href: "/admin/caja", label: "Marcar como cobrado en Caja" }}
           />
           <Stat
             label="Inventario, a costo"
-            value={formatCOP(totals.inventory)}
+            value={totals.inventory}
             hint="Lo que pagaste por los perfumes que tienes guardados: unidades en stock por su costo promedio."
             link={{ href: "/admin/productos", label: "Ver Productos" }}
           />
-        </dl>
-
-        {settings.monthlyGoal > 0 && (
-          <div className="mt-10 max-w-xl">
-            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 text-sm">
-              <span className="text-ink-soft">Meta de ventas de {monthLabel(thisMonth)}</span>
-              <span className="tabular-nums">
-                <span className="font-medium">{formatCOP(monthSold)}</span> de {formatCOP(settings.monthlyGoal)}
-              </span>
+          {settings.monthlyGoal > 0 && (
+            <div className="flex flex-col items-center bg-surface p-6 text-center">
+              <GoalGauge label={`Meta de ventas de ${monthLabel(thisMonth)}`} sold={monthSold} goal={settings.monthlyGoal} />
+              <p className="mt-3 text-xs leading-relaxed text-ink-faint">
+                Llevas {formatPercent(goalShare)} de la meta{goalShare >= 1 ? ": cumplida" : ""}. La meta se cambia en{" "}
+                <Link href="/admin/ajustes" className={linkStyles.default}>
+                  Ajustes
+                </Link>
+                .
+              </p>
             </div>
-            <div
-              role="progressbar"
-              aria-label="Avance de la meta de ventas del mes"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={Math.round(Math.min(goalShare, 1) * 100)}
-              className="mt-3 h-2 bg-mist"
-            >
-              <div
-                className="h-full rounded-r-[4px] bg-brand motion-safe:origin-left motion-safe:animate-grow"
-                style={{ width: `${Math.min(goalShare, 1) * 100}%` }}
-              />
-            </div>
-            <p className="mt-2 text-xs leading-relaxed text-ink-faint">
-              Llevas {formatPercent(goalShare)} de la meta{goalShare >= 1 ? ": cumplida" : ""}. Es lo vendido este mes frente a la
-              meta que pusiste en{" "}
-              <Link href="/admin/ajustes" className={linkStyles.default}>
-                Ajustes
-              </Link>
-              .
-            </p>
-          </div>
-        )}
+          )}
+        </div>
       </section>
 
       <section aria-labelledby="resultados" className="mt-16 border-t border-line pt-10">
@@ -263,9 +253,9 @@ export default async function SummaryPage({ searchParams }: PageProps<"/admin">)
           {results.sales === 0 && results.expenses === 0 ? (
             <p className="border border-line bg-surface px-6 py-10 text-sm text-ink-soft">No hubo ventas ni gastos en este periodo.</p>
           ) : (
-            <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_22rem]">
+            <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
               {/* La cuenta, paso a paso: de lo vendido a la ganancia. */}
-              <dl className="flex flex-col gap-4 text-sm">
+              <dl className="flex flex-col gap-4 border border-line bg-surface p-6 text-sm sm:p-8">
                 <SummaryLine sign="" label="Lo que vendiste" hint="Suma de los perfumes vendidos. No cuenta los pedidos de la tienda que siguen esperando pago.">
                   {formatCOP(results.sold)}
                 </SummaryLine>
@@ -322,70 +312,71 @@ export default async function SummaryPage({ searchParams }: PageProps<"/admin">)
                 </div>
               </dl>
 
-              <dl className="flex flex-col gap-4 border-t border-line pt-6 text-sm lg:border-t-0 lg:border-l lg:pt-0 lg:pl-8">
-                <SummaryLine label="Ventas" hint="Pedidos vendidos en el periodo.">
-                  {results.sales}
-                </SummaryLine>
-                <SummaryLine label="Unidades vendidas" hint="Perfumes que salieron en esas ventas.">
-                  {results.units}
-                </SummaryLine>
-                <SummaryLine label="Promedio por venta" hint="Lo vendido dividido entre el número de ventas.">
-                  {formatCOP(results.sales > 0 ? Math.round(results.sold / results.sales) : 0)}
-                </SummaryLine>
+              <dl className="grid grid-cols-2 gap-px border border-line bg-line lg:grid-cols-1">
+                <Figure label="Ventas" hint="Pedidos vendidos en el periodo." value={results.sales} />
+                <Figure label="Unidades vendidas" hint="Perfumes que salieron en esas ventas." value={results.units} />
+                <Figure
+                  label="Promedio por venta"
+                  hint="Lo vendido dividido entre el número de ventas."
+                  value={results.sales > 0 ? Math.round(results.sold / results.sales) : 0}
+                  money
+                />
                 {breakEven !== null && (
-                  <SummaryLine
+                  <Figure
                     label="Punto de equilibrio"
                     hint="Lo mínimo que debes vender en el periodo para cubrir tus gastos fijos. Por debajo de esto, pierdes."
-                  >
-                    {formatCOP(Math.round(breakEven))}
-                  </SummaryLine>
+                    value={Math.round(breakEven)}
+                    money
+                  />
                 )}
               </dl>
             </div>
           )}
 
-          <div className="mt-14 grid gap-x-12 gap-y-12 md:grid-cols-2 lg:grid-cols-3">
-            <ShareList
-              title="Lo que más ganancia dejó"
-              hint="Ganancia bruta por producto: lo que cobraste menos lo que te costó."
-              items={topProducts.map((product) => ({ label: product.name, total: product.profit }))}
-              empty="Sin ventas en este periodo."
-            />
-            <ShareList
-              title="Ventas por canal"
-              hint="Cuánto vendiste según por dónde llegó el cliente."
-              items={channels}
-              empty="Sin ventas en este periodo."
-            />
-            <ShareList
-              title="Gastos por categoría"
-              hint="En qué se fue lo que gastaste."
-              items={expenseCategories}
-              empty="Sin gastos en este periodo."
-            />
+          <div className="mt-6 grid items-start gap-6 lg:grid-cols-3">
+            <Panel title="Lo que más ganancia dejó" hint="Ganancia bruta por producto: lo que cobraste menos lo que te costó.">
+              <ShareList items={topProducts.map((product) => ({ label: product.name, total: product.profit }))} empty="Sin ventas en este periodo." />
+            </Panel>
+            <Panel title="Ventas por canal" hint="Cuánto vendiste según por dónde llegó el cliente. Pulsa un canal para ocultarlo.">
+              {channels.length === 0 ? <Empty>Sin ventas en este periodo.</Empty> : <MoneyDonut label="Ventas por canal" items={channels} />}
+            </Panel>
+            <Panel title="Gastos por categoría" hint="En qué se fue lo que gastaste. Pulsa una categoría para ocultarla.">
+              {expenseCategories.length === 0 ? (
+                <Empty>Sin gastos en este periodo.</Empty>
+              ) : (
+                <MoneyDonut label="Gastos por categoría" items={expenseCategories} />
+              )}
+            </Panel>
           </div>
         </div>
       </section>
 
       {months.length > 0 && (
-        <section className="mt-16 border border-line bg-surface p-6 sm:p-8">
-          <h2 className="font-display text-xl">Ventas por mes</h2>
-          <p className="mt-2 mb-8 max-w-[70ch] text-sm leading-relaxed text-ink-soft">
-            Cada barra es lo vendido en el mes: la parte que costó la mercancía y la que quedó como ganancia bruta.
+        <section aria-labelledby="meses" className="mt-16">
+          <h2 id="meses" className="font-display text-xl">
+            Mes a mes
+          </h2>
+          <p className="mt-2 mb-6 max-w-[70ch] text-sm leading-relaxed text-ink-soft">
+            Lo vendido cada mes y la ganancia bruta que dejó (lo vendido menos lo que costó esa mercancía). Pasa por una
+            barra para ver su valor; la línea marca el promedio.
           </p>
-          <MoneyBars
-            bars={months.map((month) => ({
-              label: monthLabel(month.month),
-              segments: [
-                { label: "Costo de lo vendido", value: Math.min(month.cost, month.sold), color: colors.cost },
-                { label: "Ganancia bruta", value: Math.max(0, month.sold - month.cost), color: colors.profit },
-              ],
-            }))}
-            legend={[
-              { label: "Costo de lo vendido", value: totals.cost_of_sales, color: colors.cost },
-              { label: "Ganancia bruta", value: Math.max(0, allTimeProfit), color: colors.profit },
-            ]}
-          />
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="border border-line bg-surface p-6 sm:p-8">
+              <MonthlyBars
+                label="Ventas"
+                period={monthsPeriod}
+                months={months.map((month) => ({ ...monthNames(month.month), value: month.sold }))}
+              />
+            </div>
+            <div className="border border-line bg-surface p-6 sm:p-8">
+              {/* Un mes con pérdida se dibuja en cero: la gráfica no tiene barras hacia abajo. */}
+              <MonthlyBars
+                label="Ganancia bruta"
+                period={monthsPeriod}
+                months={months.map((month) => ({ ...monthNames(month.month), value: Math.max(0, month.sold - month.cost) }))}
+              />
+            </div>
+          </div>
         </section>
       )}
 
@@ -485,41 +476,54 @@ export default async function SummaryPage({ searchParams }: PageProps<"/admin">)
   );
 }
 
-// Lista con barras: cada fila muestra su valor y una barra en proporción al mayor de la lista.
-function ShareList({ title, hint, items, empty }: { title: string; hint: string; items: Share[]; empty: string }) {
-  const max = Math.max(...items.map((item) => item.total), 1);
+// "2026-10" → la clave, el nombre completo y el nombre corto del mes para el eje ("oct").
+function monthNames(month: string) {
+  const label = monthLabel(month);
+  return { key: month, label, short: label.slice(0, 3) };
+}
 
+// Caja con título y explicación para una gráfica o una lista.
+function Panel({ title, hint, children }: { title: string; hint: string; children: React.ReactNode }) {
   return (
-    <section>
+    <section className="border border-line bg-surface p-6">
       <h3 className="font-medium">{title}</h3>
-      <p className="mt-1 text-xs leading-relaxed text-ink-faint">{hint}</p>
-      {items.length === 0 ? (
-        <p className="mt-4 text-sm text-ink-soft">{empty}</p>
-      ) : (
-        <ul className="mt-5 flex flex-col gap-4">
-          {items.map((item) => (
-            <li key={item.label}>
-              <div className="flex items-baseline justify-between gap-4 text-sm">
-                <span className="min-w-0 break-words">{item.label}</span>
-                <span className={`shrink-0 font-medium tabular-nums ${item.total < 0 ? "text-danger" : ""}`}>
-                  {formatCOP(item.total)}
-                </span>
-              </div>
-              <div aria-hidden className="mt-2 h-1.5 bg-mist">
-                <div
-                  className="h-full rounded-r-[4px] bg-brand motion-safe:origin-left motion-safe:animate-grow"
-                  style={{ width: `${(Math.max(0, item.total) / max) * 100}%` }}
-                />
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+      <p className="mt-1 mb-6 text-xs leading-relaxed text-ink-faint">{hint}</p>
+      {children}
     </section>
   );
 }
 
-// Un dato del estado actual: el valor, de dónde sale y el enlace a la sección donde se ve el detalle.
+function Empty({ children }: { children: React.ReactNode }) {
+  return <p className="text-sm text-ink-soft">{children}</p>;
+}
+
+// Lista con barras: cada fila muestra su valor y una barra en proporción al mayor de la lista.
+function ShareList({ items, empty }: { items: Share[]; empty: string }) {
+  const max = Math.max(...items.map((item) => item.total), 1);
+  if (items.length === 0) return <Empty>{empty}</Empty>;
+
+  return (
+    <ul className="flex flex-col gap-4">
+      {items.map((item) => (
+        <li key={item.label}>
+          <div className="flex items-baseline justify-between gap-4 text-sm">
+            <span className="min-w-0 break-words">{item.label}</span>
+            <span className={`shrink-0 font-medium tabular-nums ${item.total < 0 ? "text-danger" : ""}`}>{formatCOP(item.total)}</span>
+          </div>
+          <div aria-hidden className="mt-2 h-1.5 bg-mist">
+            <div
+              className="h-full rounded-r-[4px] bg-brand motion-safe:origin-left motion-safe:animate-grow"
+              style={{ width: `${(Math.max(0, item.total) / max) * 100}%` }}
+            />
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+// Un dato del estado actual: la cifra (sus dígitos ruedan al aparecer), de dónde sale y el
+// enlace a la sección donde se ve el detalle.
 function Stat({
   label,
   value,
@@ -528,20 +532,36 @@ function Stat({
   danger = false,
 }: {
   label: string;
-  value: string;
+  value: number;
   hint: string;
   link: { href: string; label: string };
   danger?: boolean;
 }) {
   return (
-    <div className="border-t border-line pt-4">
+    <div className="flex flex-col bg-surface p-6">
+      <h3 className="text-sm text-ink-soft">{label}</h3>
+      <p className="mt-3">
+        <Counter value={value} money danger={danger} />
+      </p>
+      <p className="mt-3 mb-4 text-xs leading-relaxed text-ink-faint">{hint}</p>
+      <Link href={link.href} className={`mt-auto flex items-center gap-1 self-start py-2 text-xs text-ink-soft ${linkStyles.default}`}>
+        {link.label}
+        <CaretRight size={12} weight="light" aria-hidden />
+      </Link>
+    </div>
+  );
+}
+
+// Una cifra del periodo con su explicación debajo.
+function Figure({ label, hint, value, money = false }: { label: string; hint: string; value: number; money?: boolean }) {
+  return (
+    <div className="bg-surface p-5">
       <dt className="text-sm text-ink-soft">{label}</dt>
       <dd>
-        <p className={`mt-2 text-2xl font-medium tracking-tight tabular-nums ${danger ? "text-danger" : ""}`}>{value}</p>
+        <p className="mt-2">
+          <Counter value={value} money={money} small />
+        </p>
         <p className="mt-2 text-xs leading-relaxed text-ink-faint">{hint}</p>
-        <Link href={link.href} className={`mt-1 inline-block text-xs text-ink-soft ${linkStyles.default}`}>
-          {link.label}
-        </Link>
       </dd>
     </div>
   );

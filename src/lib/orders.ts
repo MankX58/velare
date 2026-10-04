@@ -1,11 +1,15 @@
 import { sql } from "./db";
 
-// Estados de un pedido, en el orden en que avanza.
+// Estados de un pedido, en el orden en que avanza. Cada paso lo mueve una sola acción:
+//   pending → (cliente: "Ya pagué") → payment_reported → (panel: confirmar pago) →
+//   payment_confirmed → (panel: marcar como enviado) → shipped →
+//   (panel o cliente: entregado) → delivered
+// "preparing" es un estado antiguo: ya no se asigna y se muestra igual que payment_confirmed.
 export const statusLabels = {
-  pending: "Pendiente de pago",
-  payment_reported: "Pago reportado",
-  payment_confirmed: "Pago confirmado",
-  preparing: "Preparando",
+  pending: "Por pagar",
+  payment_reported: "Pago en revisión",
+  payment_confirmed: "Pagado, por enviar",
+  preparing: "Pagado, por enviar",
   shipped: "Enviado",
   delivered: "Entregado",
   cancelled: "Cancelado",
@@ -13,16 +17,14 @@ export const statusLabels = {
 
 export type OrderStatus = keyof typeof statusLabels;
 
-// A qué estados puede pasar un pedido desde cada estado (además de confirmar el pago).
-export const nextStatuses: Record<OrderStatus, OrderStatus[]> = {
-  pending: ["cancelled"],
-  payment_reported: ["cancelled"],
-  payment_confirmed: ["preparing", "shipped", "cancelled"],
-  preparing: ["shipped", "cancelled"],
-  shipped: ["delivered"],
-  delivered: [],
-  cancelled: [],
-};
+// Los pasos que se muestran en el recorrido del pedido.
+export const orderSteps: OrderStatus[] = ["pending", "payment_reported", "payment_confirmed", "shipped", "delivered"];
+
+// En qué paso del recorrido está un pedido (0 a 4). No aplica a los cancelados.
+export const stepOf = (status: OrderStatus) => orderSteps.indexOf(status === "preparing" ? "payment_confirmed" : status);
+
+// Un pedido ya pagado que falta despachar.
+export const isToShip = (status: OrderStatus) => status === "payment_confirmed" || status === "preparing";
 
 export type Order = {
   id: number;

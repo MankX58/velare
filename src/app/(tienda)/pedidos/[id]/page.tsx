@@ -7,8 +7,9 @@ import { requireUser } from "@/lib/auth";
 import { formatCOP, formatDate, whatsappLink } from "@/lib/format";
 import { OrderProgress, OrderStatusBadge } from "@/components/order-progress";
 import { QrImage } from "@/components/store/qr-image";
-import { getOrder, getOrderItems, getStoreSettings } from "@/lib/orders";
-import { cancelOrder } from "../actions";
+import { getOrder, getOrderItems, getStoreSettings, isToShip } from "@/lib/orders";
+import { ActionButton } from "@/components/action-button";
+import { cancelOrder, confirmDelivery } from "../actions";
 import { ReportPaymentForm } from "../report-payment-form";
 
 export const metadata: Metadata = { title: "Tu pedido", robots: { index: false } };
@@ -87,16 +88,48 @@ export default async function OrderPage({ params }: PageProps<"/pedidos/[id]">) 
             <section className="border border-line bg-surface p-6">
               <h2 className="font-display text-2xl">Estamos verificando tu pago</h2>
               <p className="mt-2 text-sm leading-relaxed text-ink-soft">
-                Recibimos tu aviso ({order.payment_reference}). En cuanto veamos la transferencia en el banco, el pedido
-                pasa a Pago confirmado.
+                Recibimos tu aviso ({order.payment_reference}). No tienes que hacer nada más: en cuanto veamos la
+                transferencia en el banco, confirmamos el pago y alistamos tu pedido.
               </p>
             </section>
           )}
 
-          {order.tracking && (
+          {isToShip(order.status) && (
             <section className="border border-line bg-surface p-6">
-              <h2 className="font-display text-xl">Guía de envío</h2>
-              <p className="mt-2 tabular-nums">{order.tracking}</p>
+              <h2 className="font-display text-2xl">Pago confirmado</h2>
+              <p className="mt-2 text-sm leading-relaxed text-ink-soft">
+                Recibimos tu pago. Estamos alistando tu pedido; cuando salga, aquí verás la guía de envío.
+              </p>
+            </section>
+          )}
+
+          {order.status === "shipped" && (
+            <section className="bg-brand p-6 text-on-brand sm:p-8">
+              <h2 className="font-display text-2xl">Tu pedido va en camino</h2>
+              {order.tracking && (
+                <p className="mt-4">
+                  <span className="block text-sm text-on-brand-soft">Guía de envío</span>
+                  <span className="mt-1 block text-xl font-medium tabular-nums select-all">{order.tracking}</span>
+                </p>
+              )}
+              <p className="mt-4 mb-6 leading-relaxed text-on-brand-soft">Cuando lo tengas en tus manos, avísanos.</p>
+              {order.user_id === user.id && (
+                <ActionButton
+                  action={confirmDelivery.bind(null, order.id)}
+                  label="Ya lo recibí"
+                  successMessage="Gracias por avisar"
+                  className={buttonStyles.onBrand}
+                />
+              )}
+            </section>
+          )}
+
+          {order.status === "delivered" && (
+            <section className="border border-line bg-surface p-6">
+              <h2 className="font-display text-2xl">Pedido entregado</h2>
+              <p className="mt-2 text-sm leading-relaxed text-ink-soft">
+                Gracias por tu compra.{order.tracking && ` Guía de envío: ${order.tracking}.`}
+              </p>
             </section>
           )}
 

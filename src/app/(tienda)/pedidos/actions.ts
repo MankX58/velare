@@ -39,3 +39,17 @@ export async function cancelOrder(orderId: number): Promise<FormState> {
   revalidatePath("/", "layout");
   return { ok: true };
 }
+
+// El cliente avisa que ya recibió su pedido: pasa de Enviado a Entregado.
+export async function confirmDelivery(orderId: number): Promise<FormState> {
+  const user = await requireUser("/pedidos");
+
+  const updated = await sql`
+    update orders set status = 'delivered'
+    where id = ${orderId} and user_id = ${user.id} and status = 'shipped'
+    returning id`;
+  if (updated.length === 0) return { message: "Este pedido no está en camino." };
+
+  revalidatePath("/", "layout");
+  return { ok: true };
+}

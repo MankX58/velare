@@ -70,6 +70,9 @@ export async function listBrands() {
   return rows.map((row) => row.brand as string);
 }
 
+// Dirección del catálogo filtrado por una marca. Para los buscadores es la página de esa marca.
+export const brandPath = (brand: string) => `/catalogo?marca=${encodeURIComponent(brand)}`;
+
 // Cuántos productos hay para cada público: [{ audience: "Hombre", count: 20 }, ...]
 export async function countByAudience() {
   return (await sql`

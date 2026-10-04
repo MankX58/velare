@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Fragment, ViewTransition } from "react";
 import { buttonStyles } from "@/components/button";
 import { ProductCard, ProductLabel, transitionName } from "@/components/store/product-tile";
-import { countByAudience, listBrands, listProducts } from "@/lib/catalog";
+import { brandPath, countByAudience, listBrands, listProducts } from "@/lib/catalog";
 import { absoluteUrl, siteUrl } from "@/lib/site";
 
 // El título y la descripción son los del sitio (layout raíz); aquí solo se fija la dirección oficial.
@@ -134,7 +134,7 @@ export default async function HomePage() {
                 {brands.map((brand) => (
                   <li key={brand} className="px-8 font-display text-xl tracking-[0.18em] whitespace-nowrap text-ink-soft uppercase">
                     <Link
-                      href={`/catalogo?marca=${encodeURIComponent(brand)}`}
+                      href={brandPath(brand)}
                       tabIndex={copy === 1 ? -1 : undefined}
                       className="transition-colors duration-(--duration-quick) ease-smooth-out hover:text-ink"
                     >

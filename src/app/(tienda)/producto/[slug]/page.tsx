@@ -6,7 +6,7 @@ import { linkStyles } from "@/components/button";
 import { AddToCart } from "@/components/store/add-to-cart";
 import { Gallery } from "@/components/store/gallery";
 import { ProductCard, ProductLabel, transitionName } from "@/components/store/product-tile";
-import { getProduct, listProducts } from "@/lib/catalog";
+import { brandPath, getProduct, listProducts } from "@/lib/catalog";
 import { formatCOP } from "@/lib/format";
 import { absoluteUrl } from "@/lib/site";
 
@@ -37,20 +37,41 @@ export default async function ProductPage({ params }: PageProps<"/producto/[slug
 
   // Datos del producto en el formato que leen los buscadores (schema.org), para que puedan
   // mostrar el precio en los resultados. La disponibilidad solo se declara si hay stock.
+  // El segundo bloque es el camino hasta el perfume (Velare › Catálogo › Marca › Perfume), que
+  // los buscadores muestran en el resultado en lugar de la dirección.
+  const trail = [
+    { name: "Velare", path: "/" },
+    { name: "Catálogo", path: "/catalogo" },
+    ...(product.brand ? [{ name: product.brand, path: brandPath(product.brand) }] : []),
+    { name: product.name, path: `/producto/${product.slug}` },
+  ];
   const jsonLd = {
     "@context": "https://schema.org",
-    "@type": "Product",
-    name: title,
-    description: product.description ?? undefined,
-    brand: product.brand ? { "@type": "Brand", name: product.brand } : undefined,
-    image: product.images.length > 0 ? product.images.map(absoluteUrl) : undefined,
-    offers: {
-      "@type": "Offer",
-      url: absoluteUrl(`/producto/${product.slug}`),
-      priceCurrency: "COP",
-      price: product.list_price,
-      availability: product.in_stock ? "https://schema.org/InStock" : undefined,
-    },
+    "@graph": [
+      {
+        "@type": "Product",
+        name: title,
+        description: product.description ?? undefined,
+        brand: product.brand ? { "@type": "Brand", name: product.brand } : undefined,
+        image: product.images.length > 0 ? product.images.map(absoluteUrl) : undefined,
+        offers: {
+          "@type": "Offer",
+          url: absoluteUrl(`/producto/${product.slug}`),
+          priceCurrency: "COP",
+          price: product.list_price,
+          availability: product.in_stock ? "https://schema.org/InStock" : undefined,
+        },
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: trail.map((step, index) => ({
+          "@type": "ListItem",
+          position: index + 1,
+          name: step.name,
+          item: absoluteUrl(step.path),
+        })),
+      },
+    ],
   };
 
   const sameBrand = product.brand
@@ -93,7 +114,9 @@ export default async function ProductPage({ params }: PageProps<"/producto/[slug
         <div className="lg:py-6">
           {product.brand && (
             <p className="font-display text-sm tracking-[0.22em] text-ink-soft uppercase motion-safe:animate-unveil">
-              {product.brand}
+              <Link href={brandPath(product.brand)} className="py-2 transition-colors duration-(--duration-quick) ease-smooth-out hover:text-ink">
+                {product.brand}
+              </Link>
             </p>
           )}
           <h1 className="mt-3 font-display text-4xl leading-[1.05] font-light tracking-tight text-balance motion-safe:animate-unveil motion-safe:[animation-delay:var(--duration-micro)] sm:text-6xl">

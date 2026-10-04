@@ -3,15 +3,36 @@ import Link from "next/link";
 import { buttonStyles } from "@/components/button";
 import { FilterBar } from "@/components/filter-bar";
 import { ProductCard } from "@/components/store/product-tile";
-import { listBrands, listProducts, sortOptions } from "@/lib/catalog";
+import { brandPath, listBrands, listProducts, sortOptions } from "@/lib/catalog";
 import { queryText } from "@/lib/form";
 
-export const metadata: Metadata = {
-  title: "Catálogo de perfumes",
-  description: "Todos los perfumes de Velare, para hombre, mujer y unisex. Busca por nombre o marca y pide el tuyo con envío en Colombia.",
-  // Con filtros (?marca=...) la página sigue siendo la misma para los buscadores.
-  alternates: { canonical: "/catalogo" },
-};
+type CatalogParams = Awaited<PageProps<"/catalogo">["searchParams"]>;
+
+// El catálogo filtrado solo por una marca que existe es, para los buscadores, la página de
+// esa marca ("Perfumes Lattafa"). Devuelve la marca en ese caso; con búsqueda u otro filtro, nada.
+function brandPage(params: CatalogParams, brands: string[]) {
+  const marca = queryText(params.marca);
+  return !queryText(params.q) && !queryText(params.publico) && brands.includes(marca) ? marca : "";
+}
+
+export async function generateMetadata({ searchParams }: PageProps<"/catalogo">): Promise<Metadata> {
+  // ponytail: la lista de marcas se consulta aquí y otra vez en la página. Es una consulta
+  // corta; si llegara a pesar, envolver listBrands con cache() de React.
+  const brand = brandPage(await searchParams, await listBrands());
+  if (brand) {
+    return {
+      title: `Perfumes ${brand}`,
+      description: `Perfumes ${brand} originales en Velare, con precio y envío en Colombia. Elige el tuyo y paga por transferencia.`,
+      alternates: { canonical: brandPath(brand) },
+    };
+  }
+  return {
+    title: "Catálogo de perfumes",
+    description: "Todos los perfumes de Velare, para hombre, mujer y unisex. Busca por nombre o marca y pide el tuyo con envío en Colombia.",
+    // Con búsqueda u otros filtros la página sigue siendo el catálogo para los buscadores.
+    alternates: { canonical: "/catalogo" },
+  };
+}
 
 const audiences = ["Hombre", "Mujer", "Unisex"];
 
@@ -25,11 +46,14 @@ export default async function CatalogPage({ searchParams }: PageProps<"/catalogo
 
   const [products, brands] = await Promise.all([listProducts({ q, marca, publico, orden }), listBrands()]);
   const filtering = Boolean(q || marca || publico);
+  const brand = brandPage(params, brands);
 
   return (
     <main className="mx-auto w-full max-w-7xl flex-1 px-4 pt-12 pb-24 sm:px-8">
       <div className="mb-8 flex flex-wrap items-baseline justify-between gap-4 motion-safe:animate-unveil">
-        <h1 className="font-display text-5xl font-light tracking-tight sm:text-6xl">Catálogo</h1>
+        <h1 className="font-display text-5xl font-light tracking-tight text-balance sm:text-6xl">
+          {brand ? `Perfumes ${brand}` : "Catálogo"}
+        </h1>
         <p className="text-sm text-ink-soft tabular-nums">
           {products.length} {products.length === 1 ? "perfume" : "perfumes"}
         </p>

@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { brandPath, listBrands } from "@/lib/catalog";
 import { sql } from "@/lib/db";
 import { siteUrl } from "@/lib/site";
 
@@ -17,6 +18,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: siteUrl, changeFrequency: "weekly", priority: 1 },
     { url: `${siteUrl}/catalogo`, changeFrequency: "daily", priority: 0.9 },
     { url: `${siteUrl}/cotizar`, changeFrequency: "monthly", priority: 0.5 },
+    // Una página por marca: el catálogo filtrado.
+    ...(await listBrands()).map((brand) => ({
+      url: `${siteUrl}${brandPath(brand)}`,
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    })),
     ...products.map((product) => ({
       url: `${siteUrl}/producto/${product.slug}`,
       lastModified: product.updated_at,

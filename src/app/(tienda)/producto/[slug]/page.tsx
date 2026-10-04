@@ -24,7 +24,8 @@ export async function generateMetadata({ params }: PageProps<"/producto/[slug]">
     description,
     // canonical: la dirección oficial de esta página, para que los buscadores no la cuenten dos veces.
     alternates: { canonical: `/producto/${product.slug}` },
-    openGraph: { title, description, images: product.images.slice(0, 1) },
+    // Sin foto propia no se declara imagen: así queda la de la tienda (opengraph-image.tsx).
+    openGraph: { title, description, images: product.images.length > 0 ? product.images.slice(0, 1) : undefined },
   };
 }
 

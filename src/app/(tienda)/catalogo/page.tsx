@@ -7,8 +7,8 @@ import { listBrands, listProducts, sortOptions } from "@/lib/catalog";
 import { queryText } from "@/lib/form";
 
 export const metadata: Metadata = {
-  title: "Catálogo",
-  description: "Todos los perfumes de Velare: busca por nombre o marca y filtra por público.",
+  title: "Catálogo de perfumes",
+  description: "Todos los perfumes de Velare, para hombre, mujer y unisex. Busca por nombre o marca y pide el tuyo con envío en Colombia.",
   // Con filtros (?marca=...) la página sigue siendo la misma para los buscadores.
   alternates: { canonical: "/catalogo" },
 };

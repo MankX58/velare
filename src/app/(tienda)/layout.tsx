@@ -65,7 +65,7 @@ export default async function StoreLayout({ children }: LayoutProps<"/">) {
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-8 gap-y-2 px-4 py-5 text-sm text-ink-soft sm:px-8">
           <div className="flex flex-wrap items-center gap-x-6 gap-y-1">
             <Wordmark className="text-xs text-ink" />
-            <p>Perfumes y lociones internacionales. Envíos en Colombia.</p>
+            <p>Fragancias que dejan huella. Perfumes con envío en Colombia.</p>
           </div>
           <nav aria-label="Pie de página" className="flex flex-wrap gap-x-6">
             <Link href="/catalogo" className={linkStyles.default}>

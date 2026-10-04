@@ -77,6 +77,19 @@ Hay dos formas de ponerle fotos a un perfume. Sin fotos, la tienda muestra una e
 
 Los buscadores encuentran la tienda por `/sitemap.xml` y `/robots.txt`, que se generan solos a partir de `APP_BASE_URL` y de los productos activos.
 
+## Aparecer en Google
+
+El código ya entrega a Google todo lo que pide (título, descripción, mapa del sitio, datos de la tienda y de cada perfume, icono). Falta avisarle que el sitio existe; se hace una sola vez:
+
+1. Entra a [Google Search Console](https://search.google.com/search-console) y añade una propiedad de tipo **Prefijo de la URL** con la dirección de producción.
+2. Elige el método de verificación **Etiqueta HTML** y copia solo el valor de `content="..."`.
+3. En Vercel, crea la variable `GOOGLE_SITE_VERIFICATION` con ese valor (entorno Production) y vuelve a publicar.
+4. De vuelta en Search Console, pulsa **Verificar**.
+5. En **Sitemaps**, envía `sitemap.xml`.
+6. En **Inspección de URLs**, pega la dirección de la portada y pulsa **Solicitar indexación**.
+
+Google tarda de unos días a unas semanas en mostrar un sitio nuevo. El icono y la imagen que se ve al compartir un enlace salen de `src/components/logo-mark.tsx`.
+
 ## Estructura
 
 - `db/migrations/`: las tablas y las vistas `product_stats` (stock, costo promedio, margen y alerta) y `cash_movements` (cada entrada y salida de dinero).

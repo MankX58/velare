@@ -12,9 +12,14 @@ const jost = Jost({ variable: "--font-jost", subsets: ["latin"] });
 // Cada página puede poner su propio título y descripción.
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl), // con esto, las direcciones relativas (fotos, canonical) salen completas
-  title: { default: "Velare · Perfumes internacionales en Colombia", template: "%s · Velare" },
-  description: "Perfumes y lociones internacionales con envío en Colombia. Elige tu fragancia y paga por transferencia.",
+  title: { default: "Velare Perfumes · Fragancias que dejan huella", template: "%s · Velare" },
+  description:
+    "Velare: perfumes originales para hombre y mujer con envío en Colombia. Elige tu fragancia, paga por transferencia y recíbela en casa.",
+  applicationName: "Velare",
   openGraph: { siteName: "Velare", locale: "es_CO", type: "website" },
+  twitter: { card: "summary_large_image" },
+  // Código que da Google Search Console para comprobar que el sitio es tuyo (ver README).
+  verification: { google: process.env.GOOGLE_SITE_VERIFICATION },
 };
 
 // Color de la barra del navegador en el teléfono: el verde salvia de la marca (--color-brand).

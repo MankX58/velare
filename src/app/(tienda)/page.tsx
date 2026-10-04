@@ -4,6 +4,7 @@ import { Fragment, ViewTransition } from "react";
 import { buttonStyles } from "@/components/button";
 import { ProductCard, ProductLabel, transitionName } from "@/components/store/product-tile";
 import { countByAudience, listBrands, listProducts } from "@/lib/catalog";
+import { absoluteUrl, siteUrl } from "@/lib/site";
 
 // El título y la descripción son los del sitio (layout raíz); aquí solo se fija la dirección oficial.
 export const metadata: Metadata = { alternates: { canonical: "/" } };
@@ -17,7 +18,25 @@ const steps = [
   { title: "Recíbelo", text: "Te lo enviamos a la dirección que indiques al hacer el pedido." },
 ];
 
-const headline = "Aromas del mundo, traídos para ti.";
+const headline = "Cada aroma, en su versión original.";
+
+// Datos de la tienda en el formato que leen los buscadores (schema.org): el nombre del
+// sitio, cómo más lo buscan ("Velare Perfumes") y el logo.
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    { "@type": "WebSite", name: "Velare", alternateName: ["Velare Perfumes", "Velare Colombia"], url: siteUrl },
+    {
+      "@type": "OnlineStore",
+      name: "Velare",
+      alternateName: "Velare Perfumes",
+      url: siteUrl,
+      logo: absoluteUrl("/icon"),
+      description: "Tienda de perfumes originales con envío en Colombia.",
+      areaServed: "CO",
+    },
+  ],
+};
 
 // Giro final y tono de cada caja de la portada (tonos que contrastan con el fondo verde:
 // porcelana, casi negro y niebla).
@@ -35,6 +54,7 @@ export default async function HomePage() {
 
   return (
     <main>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* Portada: mensaje a la izquierda y tres cajas reales del catálogo a la derecha. */}
       {/* overflow-x-clip: el abanico de las cajas nunca ensancha la página en pantallas angostas. */}
       <section className="mx-auto grid max-w-7xl items-center gap-12 overflow-x-clip px-4 pt-14 pb-20 sm:px-8 lg:grid-cols-[1.1fr_1fr] lg:pt-20 lg:pb-28">
@@ -53,7 +73,7 @@ export default async function HomePage() {
             ))}
           </h1>
           <p className="mt-6 max-w-[44ch] text-lg leading-relaxed text-ink-soft motion-safe:animate-unveil motion-safe:[animation-delay:var(--duration-fast)]">
-            Elige tu fragancia, paga por transferencia y recíbela en casa.
+            Perfumes originales con envío en Colombia. Elige tu fragancia, paga por transferencia y recíbela en casa.
           </p>
           <div className="mt-10 flex flex-wrap gap-4 motion-safe:animate-unveil motion-safe:[animation-delay:var(--duration-medium)]">
             <Link href="/catalogo" className={buttonStyles.primary}>

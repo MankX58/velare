@@ -52,7 +52,8 @@ export async function createOrder(items: CartItem[], formData: FormData): Promis
     returning id`;
 
   // Una sola sentencia crea el pedido y sus líneas: o se guarda todo o nada.
-  // Cada línea copia el nombre, el precio y el costo de este momento.
+  // Cada línea copia el nombre, el precio y el costo de este momento. El nombre lleva
+  // el tamaño ("Asad, 100 ml") para saber cuál presentación hay que despachar.
   const rows = await sql`
     with new_order as (
       insert into orders
@@ -64,7 +65,7 @@ export async function createOrder(items: CartItem[], formData: FormData): Promis
       returning id
     )
     insert into order_items (order_id, product_id, product_name, quantity, unit_price, unit_cost)
-    select new_order.id, p.id, p.name, item.quantity, p.list_price, s.avg_cost
+    select new_order.id, p.id, p.name || coalesce(', ' || p.size_ml || ' ml', ''), item.quantity, p.list_price, s.avg_cost
     from new_order,
          jsonb_to_recordset(${JSON.stringify(items)}::jsonb) as item(id int, quantity int)
     join products p on p.id = item.id and p.is_active

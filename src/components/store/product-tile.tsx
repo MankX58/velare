@@ -69,7 +69,7 @@ export function ProductLabel({
         <span className="font-display text-[0.75em] tracking-[0.22em] uppercase">{product.brand}</span>
         <span className="font-display text-[1.7em] leading-[1.05] font-light text-balance">{product.name}</span>
         <span className="flex justify-between gap-2 text-[0.72em] tracking-[0.14em] uppercase opacity-80">
-          <span>{product.size_ml ? `${product.size_ml} ml` : ""}</span>
+          <span>{(product.sizes ?? 1) > 1 ? `${product.sizes} tamaños` : product.size_ml ? `${product.size_ml} ml` : ""}</span>
           <span>{product.audience}</span>
         </span>
       </div>
@@ -110,7 +110,11 @@ export function ProductCard({ product, labelClassName }: { product: StoreProduct
       )}
       <div className={`flex items-baseline justify-between gap-3 text-sm ${product.images.length > 0 ? "mt-1" : "mt-3"}`}>
         <span className="text-ink-soft">{availability(product)}</span>
-        <span className="font-medium tabular-nums">{formatCOP(product.list_price)}</span>
+        {/* Con varios tamaños, el precio es el del más barato. */}
+        <span className="font-medium tabular-nums">
+          {(product.sizes ?? 1) > 1 && <span className="font-normal text-ink-soft">Desde </span>}
+          {formatCOP(product.list_price)}
+        </span>
       </div>
     </Link>
   );

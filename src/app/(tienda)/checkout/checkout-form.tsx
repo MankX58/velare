@@ -107,6 +107,7 @@ export function CheckoutForm({ defaultName, shippingFee }: { defaultName: string
                 <li key={product.id} className="flex justify-between gap-4">
                   <span className="text-ink-soft">
                     {cart[product.id]} × {product.name}
+                    {product.size_ml ? `, ${product.size_ml} ml` : ""}
                   </span>
                   <span className="shrink-0 tabular-nums">{formatCOP(product.list_price * cart[product.id])}</span>
                 </li>

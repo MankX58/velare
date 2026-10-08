@@ -56,6 +56,14 @@ export async function saveProduct(id: number | null, formData: FormData): Promis
           list_price = ${listPrice}, initial_stock = ${initialStock}, initial_unit_cost = ${initialUnitCost},
           reorder_point = ${reorderPoint}, is_active = ${isActive}, updated_at = now()
         where id = ${id}`;
+      // El perfume es uno solo aunque venga en varios tamaños: lo que lo describe
+      // se copia a sus otros tamaños. Precio, stock, SKU y fotos son de cada uno.
+      await sql`
+        update products set
+          name = ${name}, brand = ${brand}, audience = ${audience},
+          category = ${category}, description = ${description}, updated_at = now()
+        where id <> ${id}
+          and coalesce(parent_id, id) = (select coalesce(parent_id, id) from products where id = ${id})`;
     }
   } catch (error) {
     if (dbError(error).code === "23505") {
@@ -68,6 +76,74 @@ export async function saveProduct(id: number | null, formData: FormData): Promis
 
   revalidatePath("/admin", "layout");
   return { ok: true, id };
+}
+
+// ---------- Tamaños de presentación ----------
+
+// El siguiente SKU con el formato del Excel: P025 → P026.
+export async function suggestSku() {
+  await requireAdmin();
+  const [last] = await sql`
+    select max(substring(sku from 2)::int) as number from products where sku ~ '^P[0-9]+$'`;
+  return `P${String((last.number ?? 0) + 1).padStart(3, "0")}`;
+}
+
+// Agrega otro tamaño a un perfume. El tamaño nuevo es un producto aparte (con su SKU, precio,
+// stock y costo) que copia del original lo que describe al perfume y sus fotos.
+// Los campos se llaman new_* para no chocar con los del formulario del producto, que está en la misma página.
+export async function addSize(productId: number, formData: FormData): Promise<FormState> {
+  await requireAdmin();
+  if (!Number.isInteger(productId)) return { message: "Producto no válido." };
+
+  const form = readForm(formData);
+  const sizeMl = form.integer("new_size_ml", { required: true, min: 1, max: 5000 });
+  const listPrice = form.money("new_price", { required: true });
+  const sku = (form.text("new_sku", { required: true, max: 20 }) ?? "").toUpperCase();
+  if (form.hasErrors()) return { errors: form.errors };
+
+  const [source] = await sql`
+    select coalesce(parent_id, id) as group_id, name, brand from products where id = ${productId}`;
+  if (!source) return { message: "El producto ya no existe." };
+
+  const repeated = await sql`
+    select 1 from products where coalesce(parent_id, id) = ${source.group_id} and size_ml = ${sizeMl}`;
+  if (repeated.length > 0) return { errors: { new_size_ml: "Este perfume ya tiene ese tamaño." } };
+
+  let slug = slugify(`${source.brand ?? ""} ${source.name} ${sizeMl} ml`);
+  const taken = await sql`select 1 from products where slug = ${slug}`;
+  if (taken.length > 0) slug = `${slug}-${slugify(sku)}`;
+
+  try {
+    // parent_id apunta siempre al producto original, nunca a otro tamaño.
+    await sql`
+      insert into products
+        (sku, slug, name, brand, audience, size_ml, category, description, images,
+         list_price, reorder_point, is_active, parent_id)
+      select ${sku}, ${slug}, name, brand, audience, ${sizeMl}, category, description, images,
+             ${listPrice}, reorder_point, is_active, ${source.group_id}
+      from products where id = ${productId}`;
+  } catch (error) {
+    if (dbError(error).code === "23505") return { errors: { new_sku: "Ya existe un producto con ese SKU." } };
+    throw error;
+  }
+
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+// Cambia solo el precio de un producto: sirve para ajustar el de cada tamaño sin abrirlo.
+export async function setPrice(productId: number, formData: FormData): Promise<FormState> {
+  await requireAdmin();
+  if (!Number.isInteger(productId)) return { message: "Producto no válido." };
+
+  const form = readForm(formData);
+  const listPrice = form.money("price", { required: true });
+  if (form.hasErrors()) return { errors: form.errors };
+
+  await sql`update products set list_price = ${listPrice}, updated_at = now() where id = ${productId}`;
+
+  revalidatePath("/", "layout");
+  return { ok: true };
 }
 
 // ---------- Fotos del producto (Vercel Blob) ----------
@@ -132,7 +208,9 @@ export async function removeProductImage(productId: number, url: string): Promis
   if (removed.length === 0) return { message: "Esa foto ya no está en el producto." };
 
   // Las fotos de la carpeta public (npm run db:fotos) no están en Blob: solo se desvinculan.
-  if (url.startsWith("https://") && blobConnected()) await del(url);
+  // Un tamaño nuevo copia las fotos del original: el archivo se borra cuando ya nadie lo usa.
+  const stillUsed = await sql`select 1 from products where ${url} = any(images) limit 1`;
+  if (stillUsed.length === 0 && url.startsWith("https://") && blobConnected()) await del(url);
 
   revalidatePath("/", "layout");
   return { ok: true };
@@ -161,7 +239,7 @@ export async function deleteProduct(id: number): Promise<FormState> {
     await sql`delete from products where id = ${id}`;
   } catch (error) {
     if (dbError(error).code === "23503") {
-      return { message: "Este producto tiene compras o ventas registradas. Desactívalo en lugar de eliminarlo." };
+      return { message: "Este producto tiene compras, ventas u otros tamaños registrados. Desactívalo en lugar de eliminarlo." };
     }
     throw error;
   }

@@ -76,7 +76,7 @@ export function CartView() {
                     {product.name}
                   </Link>
                   <p className="mt-1 text-xs text-ink-faint">
-                    {[product.brand, availability(product)].filter(Boolean).join(", ")}
+                    {[product.brand, product.size_ml && `${product.size_ml} ml`, availability(product)].filter(Boolean).join(", ")}
                   </p>
                 </div>
                 {/* key: el total de la línea vuelve a entrar cuando cambia la cantidad. */}

@@ -8,9 +8,10 @@ import { SummaryLine } from "@/components/summary-line";
 import { requireAdmin } from "@/lib/auth";
 import { sql } from "@/lib/db";
 import { formatCOP, formatPercent } from "@/lib/format";
-import { deleteProduct } from "../actions";
+import { deleteProduct, suggestSku } from "../actions";
 import { ProductForm, type Product } from "../product-form";
 import { ProductImages } from "../product-images";
+import { ProductSizes, type SizeRow } from "../product-sizes";
 
 export const metadata = { title: "Editar producto" };
 
@@ -43,6 +44,15 @@ export default async function EditProductPage({ params }: PageProps<"/admin/prod
     join product_stats s on s.product_id = p.id
     where p.id = ${id}`) as (Product & Stats & { images: string[] })[];
   if (!product) notFound();
+
+  // Todos los tamaños del mismo perfume, incluido este.
+  const sizes = (await sql`
+    select p.id, p.sku, p.size_ml, p.list_price, p.is_active, s.stock
+    from products p
+    join product_stats s on s.product_id = p.id
+    where coalesce(p.parent_id, p.id) = (select coalesce(parent_id, id) from products where id = ${id})
+    order by p.size_ml asc nulls last, p.id asc`) as SizeRow[];
+  const suggestedSku = await suggestSku();
 
   return (
     <div className="motion-safe:animate-settle">
@@ -98,6 +108,10 @@ export default async function EditProductPage({ params }: PageProps<"/admin/prod
             Registrar una compra
           </Link>
         </aside>
+      </div>
+
+      <div className="mt-16 border-t border-line pt-10">
+        <ProductSizes productId={product.id} sizes={sizes} suggestedSku={suggestedSku} />
       </div>
 
       <div className="mt-16 border-t border-line pt-10">

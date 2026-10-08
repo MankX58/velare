@@ -6,7 +6,7 @@ import { linkStyles } from "@/components/button";
 import { AddToCart } from "@/components/store/add-to-cart";
 import { Gallery } from "@/components/store/gallery";
 import { ProductCard, ProductLabel, transitionName } from "@/components/store/product-tile";
-import { brandPath, getProduct, listProducts } from "@/lib/catalog";
+import { brandPath, getProduct, listProducts, listSizes } from "@/lib/catalog";
 import { formatCOP } from "@/lib/format";
 import { absoluteUrl } from "@/lib/site";
 
@@ -74,9 +74,12 @@ export default async function ProductPage({ params }: PageProps<"/producto/[slug
     ],
   };
 
-  const sameBrand = product.brand
-    ? (await listProducts({ marca: product.brand, limit: 5 })).filter((other) => other.id !== product.id).slice(0, 4)
-    : [];
+  const [sizes, brandProducts] = await Promise.all([
+    listSizes(product.group_id),
+    product.brand ? listProducts({ marca: product.brand, limit: 5 }) : [],
+  ]);
+  // group_id y no id: en la lista, este perfume puede estar representado por otro de sus tamaños.
+  const sameBrand = brandProducts.filter((other) => other.group_id !== product.group_id).slice(0, 4);
 
   const details = [
     { label: "Marca", value: product.brand },
@@ -125,6 +128,33 @@ export default async function ProductPage({ params }: PageProps<"/producto/[slug
           <p className="mt-6 text-3xl font-medium motion-safe:animate-unveil motion-safe:[animation-delay:calc(var(--duration-micro)*2)]">
             {formatCOP(product.list_price)}
           </p>
+
+          {/* Cada tamaño es un producto con su propia página: elegir uno es ir a ella.
+              scroll={false} y replace: la página no salta arriba ni llena el botón Atrás. */}
+          {sizes.length > 1 && (
+            <nav aria-label="Tamaño" className="mt-6 flex flex-wrap gap-2">
+              {sizes.map((size) => {
+                const current = size.slug === product.slug;
+                return (
+                  <Link
+                    key={size.slug}
+                    href={`/producto/${size.slug}`}
+                    scroll={false}
+                    replace
+                    aria-current={current ? "page" : undefined}
+                    className={`flex min-h-11 flex-col justify-center border px-4 py-2 text-sm transition-colors duration-(--duration-quick) ease-smooth-out ${
+                      current ? "border-brand bg-brand text-on-brand" : "border-line bg-surface hover:border-ink"
+                    }`}
+                  >
+                    <span className="font-medium tabular-nums">{size.size_ml ? `${size.size_ml} ml` : "Sin tamaño"}</span>
+                    <span className={`text-xs tabular-nums ${current ? "text-on-brand-soft" : "text-ink-soft"}`}>
+                      {formatCOP(size.list_price)}
+                    </span>
+                  </Link>
+                );
+              })}
+            </nav>
+          )}
 
           <p className="mt-6 flex items-start gap-3 text-sm leading-relaxed text-ink-soft">
             {product.in_stock && (

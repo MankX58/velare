@@ -16,7 +16,12 @@ export type StoreProduct = {
   list_price: number;
   images: string[]; // fotos del producto; vacío = se muestra la etiqueta
   in_stock: boolean; // false = se vende bajo pedido
+  group_id: number; // igual en todos los tamaños de un mismo perfume
+  sizes?: number; // solo en las listas: cuántos tamaños tiene el perfume
 };
+
+// Un tamaño de un perfume, para el selector de la página del producto.
+export type ProductSize = { slug: string; size_ml: number | null; list_price: number };
 
 export const sortOptions = [
   { value: "precio-asc", label: "Precio: menor a mayor" },
@@ -25,22 +30,34 @@ export const sortOptions = [
 ];
 
 // Lista de productos con búsqueda, filtros y orden. Sin `orden`, salen primero los más vendidos.
+// Un perfume con varios tamaños sale UNA sola vez: lo representa su tamaño más barato
+// ("distinct on"), y lo vendido y el stock se suman entre todos sus tamaños (ventana "g").
 export async function listProducts({ q = "", marca = "", publico = "", orden = "", limit = 200 } = {}) {
   const like = `%${q}%`;
   return (await sql`
-    select p.id, p.slug, p.name, p.brand, p.audience, p.size_ml, p.category, p.description, p.list_price, p.images,
-           s.stock > 0 as in_stock
-    from products p
-    join product_stats s on s.product_id = p.id
-    where p.is_active
-      and (${q} = '' or p.name ilike ${like} or p.brand ilike ${like})
-      and (${marca} = '' or p.brand = ${marca})
-      and (${publico} = '' or p.audience = ${publico})
+    select id, slug, name, brand, audience, size_ml, category, description, list_price, images, in_stock, group_id, sizes
+    from (
+      select distinct on (coalesce(p.parent_id, p.id))
+             p.id, p.slug, p.name, p.brand, p.audience, p.size_ml, p.category, p.description, p.list_price, p.images,
+             coalesce(p.parent_id, p.id) as group_id,
+             (count(*) over g)::int as sizes,
+             (sum(s.stock) over g) > 0 as in_stock,
+             sum(s.units_sold) over g as units_sold,
+             sum(s.stock) over g as stock
+      from products p
+      join product_stats s on s.product_id = p.id
+      where p.is_active
+        and (${q} = '' or p.name ilike ${like} or p.brand ilike ${like})
+        and (${marca} = '' or p.brand = ${marca})
+        and (${publico} = '' or p.audience = ${publico})
+      window g as (partition by coalesce(p.parent_id, p.id))
+      order by coalesce(p.parent_id, p.id), p.list_price asc, p.id asc
+    ) perfume
     order by
-      case when ${orden} = 'precio-asc' then p.list_price end asc,
-      case when ${orden} = 'precio-desc' then p.list_price end desc,
-      case when ${orden} = 'nombre' then p.name end asc,
-      s.units_sold desc, s.stock desc, p.name asc
+      case when ${orden} = 'precio-asc' then list_price end asc,
+      case when ${orden} = 'precio-desc' then list_price end desc,
+      case when ${orden} = 'nombre' then name end asc,
+      units_sold desc, stock desc, name asc
     limit ${limit}`) as StoreProduct[];
 }
 
@@ -48,18 +65,27 @@ export async function listProducts({ q = "", marca = "", publico = "", orden = "
 export const getProduct = cache(async (slug: string) => {
   const rows = (await sql`
     select p.id, p.slug, p.name, p.brand, p.audience, p.size_ml, p.category, p.description, p.list_price, p.images,
-           s.stock > 0 as in_stock
+           s.stock > 0 as in_stock, coalesce(p.parent_id, p.id) as group_id
     from products p
     join product_stats s on s.product_id = p.id
     where p.is_active and p.slug = ${slug}`) as StoreProduct[];
   return rows[0];
 });
 
+// Los tamaños activos de un perfume, del más pequeño al más grande.
+export async function listSizes(groupId: number) {
+  return (await sql`
+    select slug, size_ml, list_price
+    from products
+    where is_active and coalesce(parent_id, id) = ${groupId}
+    order by size_ml asc nulls last, id asc`) as ProductSize[];
+}
+
 // Productos por id, para mostrar el carrito con precios actuales.
 export async function getProductsById(ids: number[]) {
   return (await sql`
     select p.id, p.slug, p.name, p.brand, p.audience, p.size_ml, p.category, p.description, p.list_price, p.images,
-           s.stock > 0 as in_stock
+           s.stock > 0 as in_stock, coalesce(p.parent_id, p.id) as group_id
     from products p
     join product_stats s on s.product_id = p.id
     where p.is_active and p.id = any(${ids})`) as StoreProduct[];
